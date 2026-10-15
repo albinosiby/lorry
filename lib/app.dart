@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -6,6 +7,8 @@ import 'config/routes/routes_config.dart';
 import 'di/injection.dart';
 import 'design_system/design_system.dart';
 import 'modules/auth/cubit/session_cubit.dart';
+import 'modules/auth/models/auth_models.dart';
+import 'utils/services/notification_sync_service.dart';
 
 class LorryLinkApp extends StatefulWidget {
   const LorryLinkApp({super.key});
@@ -13,25 +16,76 @@ class LorryLinkApp extends StatefulWidget {
   State<LorryLinkApp> createState() => _LorryLinkAppState();
 }
 
-class _LorryLinkAppState extends State<LorryLinkApp> {
+class _LorryLinkAppState extends State<LorryLinkApp>
+    with WidgetsBindingObserver {
   late final SessionCubit session;
   late final RouterRefresh refresh;
   late final GoRouter router;
+  StreamSubscription<SessionModel>? notificationSubscription;
+  StreamSubscription<Map<String, dynamic>>? notificationOpens;
+
+  void openNotification(Map<String, dynamic> data) {
+    final profile = session.state.profile;
+    if (session.state.status != SessionStatus.ready ||
+        profile == null ||
+        profile.needsSetup) {
+      return;
+    }
+    di<NotificationSyncService>().takePendingOpen();
+    final route = notificationRoute(data, profile.id);
+    if (route != null) router.push(route);
+  }
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     session = di<SessionCubit>();
     refresh = RouterRefresh(session);
     router = createRouter(session, refresh);
+    if (di.isRegistered<NotificationSyncService>()) {
+      notificationOpens = di<NotificationSyncService>().opens.listen(
+        openNotification,
+      );
+      notificationSubscription = session.stream.listen((state) {
+        final profile = state.profile;
+        if (state.status == SessionStatus.ready && profile != null) {
+          di<NotificationSyncService>().start(profile.id);
+          if (!profile.needsSetup) {
+            final pending = di<NotificationSyncService>().takePendingOpen();
+            if (pending != null) openNotification(pending);
+          }
+        } else {
+          di<NotificationSyncService>().stop();
+        }
+      });
+    }
     session.refresh();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     router.dispose();
     refresh.dispose();
+    notificationSubscription?.cancel();
+    notificationOpens?.cancel();
+    if (di.isRegistered<NotificationSyncService>()) {
+      di<NotificationSyncService>().stop();
+    }
     session.close();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final profile = session.state.profile;
+    if (state == AppLifecycleState.resumed &&
+        profile != null &&
+        session.state.status == SessionStatus.ready &&
+        di.isRegistered<NotificationSyncService>()) {
+      unawaited(di<NotificationSyncService>().start(profile.id));
+    }
   }
 
   @override

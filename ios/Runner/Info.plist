@@ -8,6 +8,12 @@
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
 	<string>LORRY LINK</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>LORRY LINK uses your location to show nearby services and, when a driver starts an active trip, share the truck's live position with the assigned customer.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>LORRY LINK uses a profile photo to help people verify who they are coordinating with.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>LORRY LINK uses the camera to capture a profile photo and verification documents.</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

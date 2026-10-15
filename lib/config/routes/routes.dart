@@ -11,5 +11,14 @@ abstract final class Routes {
       postLoad = '/loads/new',
       trips = '/trips',
       profile = '/profile',
-      notifications = '/notifications';
+      notifications = '/notifications',
+      verification = '/profile/verification',
+      nearbyServices = '/driver/services',
+      vehicles = '/driver/vehicles',
+      driverDocuments = '/driver/documents',
+      availability = '/driver/availability',
+      finance = '/driver/finance';
+  static const availableTrucks = '/customer/trucks';
+  static const tracking = '/tracking';
+  static const legal = '/profile/terms', support = '/profile/support';
 }

@@ -9,6 +9,11 @@ import 'package:lorry_link/app.dart';
 import 'package:lorry_link/di/injection.dart';
 import 'package:lorry_link/modules/home/screens/home_screen.dart';
 import 'package:lorry_link/modules/auth/screens/welcome_screen.dart';
+import 'package:lorry_link/modules/loads/models/load_model.dart';
+import 'package:lorry_link/modules/verification/cubit/profile_documents_cubit.dart';
+import 'package:lorry_link/modules/verification/models/profile_document_model.dart';
+import 'package:lorry_link/modules/driver_documents/cubit/driver_documents_cubit.dart';
+import 'package:lorry_link/modules/driver_documents/models/driver_document_model.dart';
 import 'support/fakes.dart';
 
 Future<void> start(
@@ -62,6 +67,147 @@ Future<void> captureFrame(
 }
 
 void main() {
+  test('load models preserve intermediate unloading stops', () {
+    final draft = LoadDraft(
+      id: '10000000-0000-4000-8000-000000000099',
+      pickup: 'Kochi',
+      destination: 'Bengaluru',
+      cargo: 'Mixed goods',
+      vehicle: 'Open truck',
+      date: DateTime(2099, 1, 1),
+      pickupLatitude: 9.9312,
+      pickupLongitude: 76.2673,
+      destinationLatitude: 12.9716,
+      destinationLongitude: 77.5946,
+      unloadStops: const [
+        UnloadStop(
+          location: 'Thrissur',
+          unloadTonnes: 1.5,
+          latitude: 10.5276,
+          longitude: 76.2144,
+        ),
+        UnloadStop(
+          location: 'Coimbatore',
+          latitude: 11.0168,
+          longitude: 76.9558,
+        ),
+      ],
+    );
+    expect(draft.toJson()['pickup_latitude'], 9.9312);
+    expect(draft.toJson()['destination_longitude'], 77.5946);
+    expect(draft.toJson()['unload_stops'], [
+      {
+        'location': 'Thrissur',
+        'unload_tonnes': 1.5,
+        'latitude': 10.5276,
+        'longitude': 76.2144,
+      },
+      {'location': 'Coimbatore', 'latitude': 11.0168, 'longitude': 76.9558},
+    ]);
+    final load = LoadModel.fromJson({
+      'id': draft.id,
+      'shipper_id': shipper.id,
+      'pickup': draft.pickup,
+      'destination': draft.destination,
+      'cargo': draft.cargo,
+      'vehicle': draft.vehicle,
+      'pickup_date': '2099-01-01',
+      'status': 'open',
+      'unload_stops': draft.toJson()['unload_stops'],
+    });
+    expect(load.unloadStops, draft.unloadStops);
+  });
+  test('driver truck capacity filter excludes loads that do not fit', () {
+    const filter = LoadFilter(
+      vehicle: 'Open truck',
+      maxWeightTonnes: 2,
+      minVehicleLengthFt: 12,
+    );
+    final fittingLoad = LoadModel(
+      id: '10000000-0000-4000-8000-000000000101',
+      shipperId: shipper.id,
+      pickup: 'Kochi',
+      destination: 'Kannur',
+      cargo: 'Retail cartons',
+      vehicle: 'Open truck',
+      pickupDate: DateTime(2099, 1, 1),
+      status: 'open',
+      weightTonnes: 2,
+      requiredVehicleLengthFt: 12,
+    );
+    final tooHeavy = LoadModel(
+      id: '10000000-0000-4000-8000-000000000102',
+      shipperId: shipper.id,
+      pickup: 'Kochi',
+      destination: 'Kannur',
+      cargo: 'Heavy machinery',
+      vehicle: 'Open truck',
+      pickupDate: DateTime(2099, 1, 1),
+      status: 'open',
+      weightTonnes: 2.5,
+      requiredVehicleLengthFt: 12,
+    );
+    final tooLong = LoadModel(
+      id: '10000000-0000-4000-8000-000000000103',
+      shipperId: shipper.id,
+      pickup: 'Kochi',
+      destination: 'Kannur',
+      cargo: 'Long steel sections',
+      vehicle: 'Open truck',
+      pickupDate: DateTime(2099, 1, 1),
+      status: 'open',
+      weightTonnes: 2,
+      requiredVehicleLengthFt: 14,
+    );
+
+    expect(filter.matchesTruckFit(fittingLoad), isTrue);
+    expect(filter.matchesTruckFit(tooHeavy), isFalse);
+    expect(filter.matchesTruckFit(tooLong), isFalse);
+  });
+  test(
+    'identity document card data changes immediately after upload or removal',
+    () async {
+      final repository = FakeProfileDocuments();
+      final cubit = ProfileDocumentsCubit(repository);
+      final draft = ProfileDocumentDraft(
+        bytes: Uint8List.fromList([1, 2, 3]),
+        filename: 'pan.jpg',
+        contentType: 'image/jpeg',
+        type: 'pan',
+      );
+
+      expect(await cubit.upload(draft), isTrue);
+      expect(cubit.state.data, hasLength(1));
+      expect(cubit.state.data!.single.type, 'pan');
+
+      expect(await cubit.remove(cubit.state.data!.single), isTrue);
+      expect(cubit.state.data, isEmpty);
+      await cubit.close();
+    },
+  );
+  test('truck document data refreshes immediately after upload', () async {
+    final repository = FakeDriverDocuments();
+    final cubit = DriverDocumentsCubit(repository, FakeVehicles());
+    await cubit.load();
+
+    final uploaded = await cubit.upload(
+      DriverDocumentDraft(
+        type: DriverDocumentType.vehicleRegistration,
+        bytes: Uint8List.fromList([1, 2, 3]),
+        filename: 'rc.jpg',
+        contentType: 'image/jpeg',
+        vehicleId: '30000000-0000-4000-8000-000000000001',
+      ),
+    );
+
+    expect(uploaded, isTrue);
+    expect(cubit.state.data!.documents, hasLength(1));
+    expect(
+      cubit.state.data!.documents.single.vehicleId,
+      '30000000-0000-4000-8000-000000000001',
+    );
+    await cubit.close();
+  });
   testWidgets('sign-in validates before calling auth and reaches role home', (
     tester,
   ) async {
@@ -86,7 +232,7 @@ void main() {
     expect(find.text('Continue with Google'), findsNothing);
     await finish(tester, auth);
   });
-  testWidgets('profile requires a phone number before saving', (tester) async {
+  testWidgets('profile requires a mobile number before saving', (tester) async {
     final auth = FakeAuth();
     await start(tester, auth);
     final router = GoRouter.of(tester.element(find.byType(HomeScreen)));
@@ -96,7 +242,7 @@ void main() {
     await tester.ensureVisible(find.text('Save changes'));
     await tester.tap(find.text('Save changes'));
     await tester.pumpAndSettle();
-    expect(find.text('Phone number is required.'), findsOneWidget);
+    expect(find.text('Mobile number is required.'), findsOneWidget);
     await finish(tester, auth);
   });
   testWidgets(
@@ -121,7 +267,7 @@ void main() {
       await finish(tester, auth);
     },
   );
-  testWidgets('driver filters loads and cannot open shipper route', (
+  testWidgets('driver filters loads and cannot open customer route', (
     tester,
   ) async {
     final auth = FakeAuth(current: driver);
@@ -137,7 +283,23 @@ void main() {
     expect(find.text('Kochi'), findsOneWidget);
     await finish(tester, auth);
   });
-  testWidgets('shipper accepts booking only after confirmation', (
+  testWidgets(
+    'driver home shows GPS status, accepted trip, and opens My Trips',
+    (tester) async {
+      final auth = FakeAuth(current: driver);
+      final bookings = FakeBookings()..status = 'accepted';
+      await start(tester, auth, bookings: bookings);
+      expect(find.text('Current location'), findsOneWidget);
+      expect(find.text('Ready to start'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Start trip'), findsOneWidget);
+      expect(find.text('View in map'), findsOneWidget);
+      await tester.tap(find.text('My Trips'));
+      await tester.pumpAndSettle();
+      expect(find.text('My trips'), findsOneWidget);
+      await finish(tester, auth);
+    },
+  );
+  testWidgets('customer accepts booking only after confirmation', (
     tester,
   ) async {
     final auth = FakeAuth();
@@ -157,7 +319,7 @@ void main() {
     expect(find.text('Start trip'), findsNothing);
     await finish(tester, auth);
   });
-  testWidgets('driver delivery and shipper completion actions follow status', (
+  testWidgets('driver delivery and customer completion actions follow status', (
     tester,
   ) async {
     final auth = FakeAuth(current: driver);
@@ -170,14 +332,53 @@ void main() {
     await tester.ensureVisible(find.text('Report delivery'));
     await tester.tap(find.text('Report delivery'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Confirm'));
+    final collectionField = find.widgetWithText(TextFormField, 'Amount collected (₹)');
+    await tester.enterText(collectionField, '12500');
+    await tester.tap(find.text('Report delivery & add income'));
     await tester.pumpAndSettle();
     expect(bookings.reported, isTrue);
-    expect(find.textContaining('Waiting for the shipper'), findsOneWidget);
+    expect(bookings.collectedAmount, 12500);
+    expect(find.textContaining('Waiting for the customer'), findsOneWidget);
+    await finish(tester, auth);
+  });
+  testWidgets('driver starts a trip only with a first shared location', (
+    tester,
+  ) async {
+    final auth = FakeAuth(current: driver);
+    final bookings = FakeBookings()..status = 'accepted';
+    await start(tester, auth, bookings: bookings);
+    final router = GoRouter.of(tester.element(find.byType(HomeScreen)));
+    router.push('/bookings/${bookings.booking.id}');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Start trip'));
+    await tester.pumpAndSettle();
+    expect(find.text('Start trip and share location?'), findsOneWidget);
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.widgetWithText(FilledButton, 'Start trip'),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(bookings.actions, contains('in_transit'));
+    expect(find.text('Live trip tracking'), findsOneWidget);
+    await finish(tester, auth);
+  });
+  testWidgets('customer tracking waits for GPS instead of buffering forever', (
+    tester,
+  ) async {
+    final auth = FakeAuth();
+    await start(tester, auth);
+    final router = GoRouter.of(tester.element(find.byType(HomeScreen)));
+    router.push('/tracking/20000000-0000-4000-8000-000000000001');
+    await tester.pumpAndSettle();
+    expect(find.text('Waiting for the first location'), findsOneWidget);
+    expect(find.text('Refresh location'), findsOneWidget);
     await finish(tester, auth);
   });
   for (final width in [320.0, 599.0, 600.0, 1199.0, 1200.0, 1440.0]) {
-    testWidgets('core shipper screens fit width $width', (tester) async {
+    testWidgets('core customer screens fit width $width', (tester) async {
       final auth = FakeAuth();
       await start(tester, auth, size: Size(width, 1000));
       final router = GoRouter.of(tester.element(find.byType(HomeScreen)));

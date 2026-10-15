@@ -6,6 +6,7 @@ import 'app.dart';
 import 'config/app_config.dart';
 import 'di/injection.dart';
 import 'utils/services/secure_session_storage.dart';
+import 'utils/services/notification_sync_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +25,7 @@ Future<void> main() async {
       ),
     );
     configureDependencies(Supabase.instance.client);
+    await NotificationSyncService.initializeFirebase();
     runApp(const LorryLinkApp());
   } catch (_) {
     runApp(

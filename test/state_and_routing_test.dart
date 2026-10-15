@@ -5,6 +5,9 @@ import 'package:lorry_link/config/routes/routes_config.dart';
 import 'package:lorry_link/core/state/resource_cubit.dart';
 import 'package:lorry_link/modules/auth/models/auth_models.dart';
 import 'package:lorry_link/modules/auth/cubit/session_cubit.dart';
+import 'package:lorry_link/modules/driver_documents/models/driver_document_model.dart';
+import 'package:lorry_link/modules/loads/models/load_model.dart';
+import 'package:lorry_link/modules/profile/models/profile_model.dart';
 import 'package:lorry_link/utils/exceptions/app_exception.dart';
 import 'support/fakes.dart';
 
@@ -79,6 +82,35 @@ void main() {
         Uri.parse('/home'),
       ),
       startsWith('/startup'),
+    );
+  });
+  test('ready accounts with missing required data are sent to setup', () {
+    const incompleteProfile = ProfileModel(
+      id: '00000000-0000-4000-8000-000000000003',
+      name: 'New customer',
+      role: UserRole.shipper,
+      phone: '+919876543210',
+    );
+    const ready = SessionModel(SessionStatus.ready, profile: incompleteProfile);
+
+    expect(sessionRedirect(ready, Uri.parse('/home')), '/complete-profile');
+    expect(sessionRedirect(ready, Uri.parse('/complete-profile')), isNull);
+  });
+  test('Indian mobile numbers are normalized and validated', () {
+    expect(ProfileModel.isValidIndianMobile('98765 43210'), isTrue);
+    expect(ProfileModel.isValidIndianMobile('+91 98765 43210'), isTrue);
+    expect(ProfileModel.isValidIndianMobile('1234567890'), isFalse);
+    expect(ProfileModel.normalizeIndianMobile('98765 43210'), '+919876543210');
+  });
+  test('driver document and load-fit values use the API contract', () {
+    expect(DriverDocumentType.drivingLicense.databaseValue, 'driving_license');
+    expect(
+      DriverDocumentType.vehicleRegistration.databaseValue,
+      'vehicle_registration',
+    );
+    expect(
+      const LoadFilter(maxWeightTonnes: 8, minVehicleLengthFt: 20).toJson(),
+      containsPair('max_weight_tonnes', 8),
     );
   });
   test('later fetch wins over a stale result', () async {

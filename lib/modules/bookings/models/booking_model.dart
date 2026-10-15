@@ -13,9 +13,10 @@ class BookingModel extends Equatable {
     this.otherPhone = '',
     this.deliveryReportedAt,
     this.reason,
+    this.source = 'driver_request',
     this.events = const [],
   });
-  final String id, driverId, status, driverName, otherName, otherPhone;
+  final String id, driverId, status, driverName, otherName, otherPhone, source;
   final String? reason;
   final LoadModel load;
   final DateTime createdAt;
@@ -36,6 +37,7 @@ class BookingModel extends Equatable {
     otherPhone: j['other_phone'] ?? '',
     deliveryReportedAt: DateTime.tryParse(j['delivery_reported_at'] ?? ''),
     reason: j['reason'],
+    source: j['source'] ?? 'driver_request',
     events: ((j['events'] as List?) ?? [])
         .map((e) => BookingEvent.fromJson(e))
         .toList(),
@@ -48,6 +50,7 @@ class BookingModel extends Equatable {
     deliveryReportedAt,
     reason,
     events,
+    source,
   ];
 }
 

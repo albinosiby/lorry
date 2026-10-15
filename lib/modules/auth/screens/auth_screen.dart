@@ -144,7 +144,9 @@ class _AuthScreenState extends State<AuthScreen> {
                       .map(
                         (r) => ChoiceChip(
                           label: Text(
-                            r == UserRole.shipper ? 'Ship goods' : 'Find loads',
+                            r == UserRole.shipper
+                                ? 'Post a parcel or load'
+                                : 'Find loads',
                           ),
                           avatar: Icon(
                             r == UserRole.shipper

@@ -14,15 +14,19 @@ class LoadRepository implements ILoadRepository {
     bool mine = false,
     LoadFilter filter = const LoadFilter(),
     int offset = 0,
-  }) async =>
-      (await service.call('loads.list', {
-                'mine': mine,
-                ...filter.toJson(),
-                'offset': offset,
-              })
-              as List)
-          .map((j) => LoadModel.fromJson(j))
-          .toList();
+  }) async {
+    final loads =
+        (await service.call('loads.list', {
+                  'mine': mine,
+                  ...filter.toJson(),
+                  'offset': offset,
+                })
+                as List)
+            .map((j) => LoadModel.fromJson(j))
+            .toList();
+    return mine ? loads : loads.where(filter.matchesTruckFit).toList();
+  }
+
   @override
   Future<LoadDetailsModel> get(String id) async {
     final j = await service.call('loads.get', {'id': id});

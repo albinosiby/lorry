@@ -30,13 +30,44 @@ class AppException implements Exception {
       );
     }
     if (error is PostgrestException && error.code == '23505') {
-      return const AppException('This action was already submitted. Refresh to see the latest status.');
+      return const AppException(
+        'This action was already submitted. Refresh to see the latest status.',
+      );
     }
     if (error is PostgrestException && error.code == '42501') {
-      return const AppException('Your account does not have permission for this action.');
+      return const AppException(
+        'Your account does not have permission for this action.',
+      );
     }
     if (error is PostgrestException && error.code == 'P0001') {
       return AppException(error.message);
+    }
+    if (error is StorageException) {
+      return AppException(
+        error.message.isEmpty
+            ? 'Document upload failed. Please try again.'
+            : error.message,
+      );
+    }
+    if (error is FunctionException) {
+      final details = error.details;
+      final functionMessage = details is Map && details['error'] is String
+          ? details['error'] as String
+          : null;
+      if (error.status == 0) {
+        return const AppException(
+          'Unable to connect. Check your connection and try again.',
+        );
+      }
+      if (functionMessage != null && functionMessage.isNotEmpty) {
+        return AppException(functionMessage);
+      }
+      if (error.status == 401) {
+        return const AppException('Please sign in again to use this service.');
+      }
+      return const AppException(
+        'This service is temporarily unavailable. Please try again.',
+      );
     }
     return const AppException(
       'Unable to connect. Check your connection and try again.',

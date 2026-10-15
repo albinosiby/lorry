@@ -9,5 +9,13 @@ abstract interface class IBookingRepository {
     int offset = 0,
   });
   Future<BookingModel> get(String id);
-  Future<void> transition(String id, String status, {String? reason});
+  Future<void> transition(
+    String id,
+    String status, {
+    String? reason,
+    double? collectedAmount,
+    double? latitude,
+    double? longitude,
+  });
+  Future<void> acceptCustomerInvitation(String id);
 }

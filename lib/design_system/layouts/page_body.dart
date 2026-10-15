@@ -81,7 +81,7 @@ class _PageBodyState extends State<PageBody> with WidgetsBindingObserver {
       ),
     );
     return SafeArea(
-      top: false,
+      top: Scaffold.maybeOf(context)?.hasAppBar != true,
       child: widget.onRefresh == null
           ? view
           : RefreshIndicator(onRefresh: widget.onRefresh!, child: view),

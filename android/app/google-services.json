@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "661433704743",
+    "project_id": "lorry-link-e2906",
+    "storage_bucket": "lorry-link-e2906.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:661433704743:android:5e86649712315cbe990902",
+        "android_client_info": {
+          "package_name": "com.lorrylink.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBpv0nCY_s3x2AEv2Qwdj_mHb8UpMnzwvk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

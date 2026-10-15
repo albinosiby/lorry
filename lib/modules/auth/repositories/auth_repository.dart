@@ -1,13 +1,15 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../config/app_config.dart';
 import '../../../utils/services/supabase_service.dart';
+import '../../../utils/services/notification_sync_service.dart';
 import '../../profile/models/profile_model.dart';
 import '../models/auth_models.dart';
 import 'auth_repository_interface.dart';
 
 class AuthRepository implements IAuthRepository {
-  AuthRepository(this.service);
+  AuthRepository(this.service, [this.notifications]);
   final SupabaseService service;
+  final NotificationSyncService? notifications;
   @override
   Stream<SessionEvent> get events => service.client.auth.onAuthStateChange.map(
     (event) => event.event == AuthChangeEvent.passwordRecovery
@@ -66,7 +68,10 @@ class AuthRepository implements IAuthRepository {
     await service.client.auth.updateUser(UserAttributes(password: password));
   });
   @override
-  Future<void> signOut() => service.guard(() => service.client.auth.signOut());
+  Future<void> signOut() => service.guard(() async {
+    await notifications?.unregister();
+    await service.client.auth.signOut();
+  });
   @override
   Future<ProfileModel?> profile() async {
     final json = await service.call('profile.get');

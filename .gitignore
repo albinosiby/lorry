@@ -45,6 +45,8 @@ app.*.map.json
 /android/app/release
 
 # Local service configuration
+**/service account.json
+**/*firebase-adminsdk*.json
 config/*.local.json
 .env*
 !*.example

@@ -25,8 +25,18 @@ class AdaptiveScaffold extends StatelessWidget {
       Icons.person_outline,
     ];
     final width = MediaQuery.sizeOf(context).width;
-    void select(int index) =>
-        shell.goBranch(index, initialLocation: index == shell.currentIndex);
+    void select(int index) {
+      if (!shipper && index == 1) {
+        context.go('/loads/find');
+        return;
+      }
+      if (!shipper && index == 2) {
+        context.go('/trips');
+        return;
+      }
+      shell.goBranch(index, initialLocation: index == shell.currentIndex);
+    }
+
     final content = Row(
       children: [
         if (width >= 1200)
@@ -64,18 +74,22 @@ class AdaptiveScaffold extends StatelessWidget {
         Expanded(child: shell),
       ],
     );
+    final isHome = shell.currentIndex == 0;
+
     return Scaffold(
-      appBar: AppBar(
-        title: width >= 1200 ? Text(labels[shell.currentIndex]) : const Brand(),
-        actions: [
-          IconButton(
-            tooltip: 'Notifications',
-            onPressed: () => context.push('/notifications'),
-            icon: const Icon(Icons.notifications_none),
-          ),
-          const SizedBox(width: 12),
-        ],
-      ),
+      appBar: isHome
+          ? null
+          : AppBar(
+              title: Text(labels[shell.currentIndex]),
+              actions: [
+                IconButton(
+                  tooltip: 'Notifications',
+                  onPressed: () => context.push('/notifications'),
+                  icon: const Icon(Icons.notifications_none),
+                ),
+                const SizedBox(width: 12),
+              ],
+            ),
       body: content,
       bottomNavigationBar: width < 600
           ? NavigationBar(

@@ -27,6 +27,24 @@ import '../../modules/bookings/screens/trips_screen.dart';
 import '../../modules/bookings/screens/booking_details_screen.dart';
 import '../../modules/notifications/cubit/notifications_cubit.dart';
 import '../../modules/notifications/screens/notifications_screen.dart';
+import '../../modules/nearby_services/cubit/nearby_services_cubit.dart';
+import '../../modules/nearby_services/screens/nearby_services_screen.dart';
+import '../../modules/vehicles/cubit/vehicles_cubit.dart';
+import '../../modules/vehicles/screens/vehicles_screen.dart';
+import '../../modules/vehicles/screens/vehicle_details_screen.dart';
+import '../../modules/driver_documents/cubit/driver_documents_cubit.dart';
+import '../../modules/driver_documents/screens/driver_documents_screen.dart';
+import '../../modules/availability/cubit/availability_cubit.dart';
+import '../../modules/availability/screens/availability_screen.dart';
+import '../../modules/finance/cubit/finance_cubit.dart';
+import '../../modules/finance/screens/finance_screen.dart';
+import '../../modules/verification/cubit/profile_documents_cubit.dart';
+import '../../modules/verification/screens/verification_screen.dart';
+import '../../modules/customer_trucks/cubit/customer_trucks_cubit.dart';
+import '../../modules/customer_trucks/screens/customer_trucks_screen.dart';
+import '../../modules/tracking/cubit/trip_tracking_cubit.dart';
+import '../../modules/tracking/screens/trip_tracking_screen.dart';
+import '../../modules/account/screens/account_resources_screen.dart';
 import 'routes.dart';
 
 class RouterRefresh extends ChangeNotifier {
@@ -66,6 +84,10 @@ String? sessionRedirect(SessionModel session, Uri uri) {
     return path == Routes.reset ? null : Routes.reset;
   }
   if (session.status == SessionStatus.setup) {
+    return path == Routes.setup ? null : Routes.setup;
+  }
+  final profile = session.profile;
+  if (profile == null || profile.needsSetup) {
     return path == Routes.setup ? null : Routes.setup;
   }
   final driver = session.profile?.role == UserRole.driver;
@@ -182,8 +204,11 @@ GoRouter createRouter(SessionCubit session, RouterRefresh refresh) => GoRouter(
       ),
     GoRoute(
       path: Routes.setup,
-      builder: (context, state) => BlocProvider(
-        create: (_) => di<ProfileCubit>()..load(),
+      builder: (context, state) => MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => di<ProfileCubit>()..load()),
+          BlocProvider(create: (_) => di<ProfileDocumentsCubit>()),
+        ],
         child: const ProfileScreen(setup: true),
       ),
     ),
@@ -197,8 +222,17 @@ GoRouter createRouter(SessionCubit session, RouterRefresh refresh) => GoRouter(
           routes: [
             GoRoute(
               path: Routes.home,
-              builder: (context, state) => BlocProvider(
-                create: (_) => di<HomeCubit>()..load(),
+              builder: (context, state) => MultiBlocProvider(
+                providers: [
+                  BlocProvider(
+                    create: (_) => di<HomeCubit>()
+                      ..load(
+                        includeDriverTools:
+                            session.state.profile?.role == UserRole.driver,
+                      ),
+                  ),
+                  BlocProvider(create: (_) => di<BookingDetailsCubit>()),
+                ],
                 child: const HomeScreen(),
               ),
             ),
@@ -304,10 +338,93 @@ GoRouter createRouter(SessionCubit session, RouterRefresh refresh) => GoRouter(
       },
     ),
     GoRoute(
+      path: Routes.legal,
+      builder: (_, _) =>
+          const AccountResourcesScreen(resource: AccountResource.legal),
+    ),
+    GoRoute(
+      path: Routes.support,
+      builder: (_, _) =>
+          const AccountResourcesScreen(resource: AccountResource.support),
+    ),
+    GoRoute(
+      path: '${Routes.tracking}/:bookingId',
+      builder: (context, state) => BlocProvider(
+        create: (_) =>
+            di<TripTrackingCubit>()..load(state.pathParameters['bookingId']!),
+        child: TripTrackingScreen(
+          bookingId: state.pathParameters['bookingId']!,
+        ),
+      ),
+    ),
+    GoRoute(
+      path: Routes.availableTrucks,
+      builder: (context, state) => BlocProvider(
+        create: (_) => di<CustomerTrucksCubit>()..load(),
+        child: const CustomerTrucksScreen(),
+      ),
+    ),
+    GoRoute(
+      path: Routes.verification,
+      builder: (context, state) => BlocProvider(
+        create: (_) => di<ProfileDocumentsCubit>()..load(),
+        child: const VerificationScreen(),
+      ),
+    ),
+    GoRoute(
       path: Routes.notifications,
       builder: (context, state) => BlocProvider(
         create: (_) => di<NotificationsCubit>()..load(),
         child: const NotificationsScreen(),
+      ),
+    ),
+    GoRoute(
+      path: Routes.nearbyServices,
+      builder: (context, state) => BlocProvider(
+        create: (_) => di<NearbyServicesCubit>(),
+        child: const NearbyServicesScreen(),
+      ),
+    ),
+    GoRoute(
+      path: Routes.vehicles,
+      builder: (context, state) => BlocProvider(
+        create: (_) => di<VehiclesCubit>()..load(),
+        child: const VehiclesScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '${Routes.vehicles}/:vehicleId',
+      builder: (context, state) => MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => di<VehiclesCubit>()..load()),
+          BlocProvider(create: (_) => di<DriverDocumentsCubit>()..load()),
+        ],
+        child: VehicleDetailsScreen(
+          vehicleId: state.pathParameters['vehicleId']!,
+        ),
+      ),
+    ),
+    GoRoute(
+      path: Routes.driverDocuments,
+      builder: (context, state) => BlocProvider(
+        create: (_) => di<DriverDocumentsCubit>()..load(),
+        child: DriverDocumentsScreen(
+          identityOnly: state.uri.queryParameters['identity'] == 'true',
+        ),
+      ),
+    ),
+    GoRoute(
+      path: Routes.availability,
+      builder: (context, state) => BlocProvider(
+        create: (_) => di<AvailabilityCubit>()..load(),
+        child: const AvailabilityScreen(),
+      ),
+    ),
+    GoRoute(
+      path: Routes.finance,
+      builder: (context, state) => BlocProvider(
+        create: (_) => di<FinanceCubit>()..load(),
+        child: const FinanceScreen(),
       ),
     ),
   ],

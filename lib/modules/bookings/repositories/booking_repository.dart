@@ -29,11 +29,25 @@ class BookingRepository implements IBookingRepository {
   Future<BookingModel> get(String id) async =>
       BookingModel.fromJson(await service.call('bookings.get', {'id': id}));
   @override
-  Future<void> transition(String id, String status, {String? reason}) async {
+  Future<void> transition(
+    String id,
+    String status, {
+    String? reason,
+    double? collectedAmount,
+    double? latitude,
+    double? longitude,
+  }) async {
     await service.call('bookings.transition', {
       'id': id,
       'status': status,
       'reason': reason,
+      'amount_collected': collectedAmount,
+      'latitude': latitude,
+      'longitude': longitude,
     });
   }
+
+  @override
+  Future<void> acceptCustomerInvitation(String id) =>
+      service.callCustomer('customer.invitation.accept', {'booking_id': id});
 }

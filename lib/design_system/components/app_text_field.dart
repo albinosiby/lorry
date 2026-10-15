@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class AppTextField extends StatefulWidget {
   const AppTextField({
@@ -12,6 +13,8 @@ class AppTextField extends StatefulWidget {
     this.hint,
     this.maxLength,
     this.onChanged,
+    this.prefixText,
+    this.inputFormatters,
     this.textCapitalization = TextCapitalization.none,
   });
   final TextEditingController controller;
@@ -23,6 +26,8 @@ class AppTextField extends StatefulWidget {
   final int lines;
   final int? maxLength;
   final ValueChanged<String>? onChanged;
+  final String? prefixText;
+  final List<TextInputFormatter>? inputFormatters;
   final TextCapitalization textCapitalization;
   @override
   State<AppTextField> createState() => _AppTextFieldState();
@@ -41,6 +46,7 @@ class _AppTextFieldState extends State<AppTextField> {
       maxLines: widget.lines,
       maxLength: widget.maxLength,
       onChanged: widget.onChanged,
+      inputFormatters: widget.inputFormatters,
       textCapitalization: widget.textCapitalization,
       textInputAction: widget.lines > 1
           ? TextInputAction.newline
@@ -50,6 +56,7 @@ class _AppTextFieldState extends State<AppTextField> {
       decoration: InputDecoration(
         labelText: widget.label,
         hintText: widget.hint,
+        prefixText: widget.prefixText,
         suffixIcon: widget.password
             ? IconButton(
                 tooltip: hidden ? 'Show password' : 'Hide password',
