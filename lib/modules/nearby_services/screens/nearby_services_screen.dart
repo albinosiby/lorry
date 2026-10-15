@@ -1,8 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:lorry_link/core/state/resource_cubit.dart';
 import 'package:lorry_link/design_system/design_system.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../utils/services/location_service.dart';
 import '../cubit/nearby_services_cubit.dart';
 import '../models/nearby_service_model.dart';
@@ -17,221 +18,247 @@ class NearbyServicesScreen extends StatefulWidget {
 
 class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
   final search = TextEditingController();
-  int radiusKm = 10;
   NearbyServiceType? type;
+  Timer? debounce;
 
   @override
   void initState() {
     super.initState();
-    context.read<NearbyServicesCubit>().locateAndSearch();
+    final cubit = context.read<NearbyServicesCubit>();
+    if (cubit.state.data == null) {
+      discover();
+    }
   }
 
   @override
   void dispose() {
+    debounce?.cancel();
     search.dispose();
     super.dispose();
   }
 
-  void discover({NearbyServiceType? nextType, bool clearType = false}) {
-    if (nextType != null || clearType) type = clearType ? null : nextType;
-    context.read<NearbyServicesCubit>().locateAndSearch(
-      radiusKm: radiusKm,
-      type: type,
-      query: search.text.trim(),
-    );
+  Future<void> discover() => context
+      .read<NearbyServicesCubit>()
+      .discoverSections(type: type, query: search.text.trim());
+
+  void selectCategory(NearbyServiceType? value) {
+    debounce?.cancel();
+    setState(() {
+      type = value;
+      search.clear();
+    });
+    discover();
+  }
+
+  Future<void> _open(Uri uri) async {
+    try {
+      if (await launchUrl(uri, mode: LaunchMode.externalApplication)) return;
+    } catch (_) {
+      /* Handled with fallback notice */
+    }
+    if (mounted) {
+      showNotice(context, 'Could not open the selected application.');
+    }
+  }
+
+  void _callNumber(String phone) {
+    final clean = phone.replaceAll(RegExp(r'[^+0-9]'), '');
+    if (clean.isNotEmpty) {
+      _open(Uri(scheme: 'tel', path: clean));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Nearby Roadside Services',
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Driver Essentials',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+            ),
+            Text(
+              'Highway roadside services & amenities',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: isDark ? Colors.white60 : Colors.black54,
+                fontSize: 11,
+              ),
+            ),
+          ],
         ),
         actions: [
           IconButton(
-            tooltip: 'Refresh nearby',
+            tooltip: 'Refresh nearby essentials',
             icon: const Icon(Icons.refresh_rounded),
-            onPressed: () => discover(),
+            onPressed: discover,
           ),
         ],
       ),
       body: PageBody(
-        onRefresh: () async => discover(),
-        child: BlocConsumer<
-          NearbyServicesCubit,
-          ResourceState<NearbyServicesScreenModel>
-        >(
-          listener: (context, state) {
-            if (state.error != null) showNotice(context, state.error!);
-          },
-          builder: (context, state) {
-            final model = state.data;
-            if (model == null) {
-              return state.error == null
-                  ? const Padding(
-                      padding: EdgeInsets.all(48),
-                      child: Center(child: CircularProgressIndicator()),
-                    )
-                  : ErrorPanel(state.error!, retry: discover);
-            }
+        onRefresh: () async {
+          if (!context.read<NearbyServicesCubit>().state.busy) await discover();
+        },
+        child:
+            BlocBuilder<
+              NearbyServicesCubit,
+              ResourceState<NearbyServicesScreenModel>
+            >(
+              builder: (context, state) {
+                final model = state.data;
+                final location = model?.location;
+                final available = location?.available == true;
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 1. Hero GPS Location Status Banner
-                _buildGpsHeroBanner(context, model.location, state.busy),
-                const SizedBox(height: 16),
-
-                // 2. Search Field
-                _buildSearchBar(context, state.busy),
-                const SizedBox(height: 14),
-
-                // 3. Category Selector Carousel
-                _buildCategorySelector(context),
-                const SizedBox(height: 14),
-
-                // 4. Radius Filter Pills
-                _buildRadiusSelector(context),
-                const SizedBox(height: 20),
-
-                // 5. Results Section Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      'Discovered Places (${model.services.length})',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
+                    // 1. Live GPS Location & Corridor Hero Banner
+                    _buildLocationHeroBanner(
+                      context,
+                      model,
+                      location,
+                      state.busy,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 2. Highway Emergency SOS Strip
+                    _buildEmergencyHelplines(context),
+                    const SizedBox(height: 18),
+
+                    // 3. Category Selector Carousel
+                    _buildCategorySelector(context),
+                    const SizedBox(height: 16),
+
+                    // 4. Highway Search Bar with Clear
+                    _buildSearchBar(context, state.busy),
+                    const SizedBox(height: 14),
+
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: FilledButton.tonalIcon(
+                        onPressed: () {
+                          debounce?.cancel();
+                          setState(() {
+                            type = null;
+                            search.clear();
+                          });
+                          discover();
+                        },
+                        icon: const Icon(Icons.my_location),
+                        label: const Text('Near me'),
                       ),
                     ),
-                    if (state.busy)
-                      const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Closest first · Approximate straight-line distances',
+                    ),
+                    const SizedBox(height: 12),
+                    if (state.error != null)
+                      ErrorPanel(state.error!, retry: discover)
+                    else if (model != null && !available)
+                      _buildGpsOfflineNotice(context, location?.status)
+                    else if (model != null)
+                      for (final category
+                          in type == null ? NearbyServiceType.values : [type!])
+                        _buildCategorySection(context, model, category),
+                    const SizedBox(height: 36),
                   ],
-                ),
-                const SizedBox(height: 12),
-
-                // 6. Service Cards or Location Help / Empty State
-                if (!model.location.available)
-                  _buildLocationHelpCard(context, model.location)
-                else if (state.busy && model.services.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.all(36),
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                else if (model.services.isEmpty)
-                  _buildEmptyState(context)
-                else
-                  ...model.services.map((item) => _buildServiceCard(context, item)),
-
-                const SizedBox(height: 20),
-              ],
-            );
-          },
-        ),
+                );
+              },
+            ),
       ),
     );
   }
 
-  // ─── 1. GPS Location Status Banner ──────────────────────────────────────────
+  // ─── 1. Location Hero Banner ───────────────────────────────────────────────
 
-  Widget _buildGpsHeroBanner(
+  Widget _buildLocationHeroBanner(
     BuildContext context,
-    DeviceLocation location,
+    NearbyServicesScreenModel? model,
+    DeviceLocation? location,
     bool busy,
   ) {
-    final available = location.available;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final available = location?.available == true;
+
+    final primaryColor = available
+        ? const Color(0xFF2E7D32)
+        : const Color(0xFFE65100);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: available
-              ? (isDark
-                  ? [const Color(0xFF143024), const Color(0xFF0F221A)]
-                  : [const Color(0xFFE8F5E9), const Color(0xFFC8E6C9)])
-              : (isDark
-                  ? [const Color(0xFF381E1E), const Color(0xFF261414)]
-                  : [const Color(0xFFFFEBEE), const Color(0xFFFFCDD2)]),
-        ),
+        color: primaryColor.withValues(alpha: isDark ? .15 : .08),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: available
-              ? const Color(0xFF2E7D32).withValues(alpha: 0.4)
-              : const Color(0xFFC62828).withValues(alpha: 0.4),
-          width: 1.4,
+          color: primaryColor.withValues(alpha: isDark ? .35 : .2),
+          width: 1.2,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
       ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
           Container(
-            width: 38,
-            height: 38,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: available
-                  ? const Color(0xFF2E7D32).withValues(alpha: 0.16)
-                  : const Color(0xFFC62828).withValues(alpha: 0.16),
+              color: primaryColor.withValues(alpha: .2),
               shape: BoxShape.circle,
             ),
             child: Icon(
-              available ? Icons.gps_fixed_rounded : Icons.gps_off_rounded,
-              color: available ? const Color(0xFF2E7D32) : const Color(0xFFC62828),
-              size: 20,
+              available
+                  ? Icons.my_location_rounded
+                  : Icons.location_off_rounded,
+              color: primaryColor,
+              size: 22,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Text(
-                      available ? 'Current Location Active' : 'GPS Offline',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 13.5,
-                        color: available
-                            ? (isDark ? const Color(0xFF81C784) : const Color(0xFF1B5E20))
-                            : (isDark ? const Color(0xFFE57373) : const Color(0xFFB71C1C)),
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: available ? Colors.green : Colors.orange,
+                        shape: BoxShape.circle,
                       ),
                     ),
                     const SizedBox(width: 6),
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: BoxDecoration(
-                        color: available ? const Color(0xFF2E7D32) : const Color(0xFFC62828),
-                        shape: BoxShape.circle,
+                    Expanded(
+                      child: Text(
+                        available
+                            ? 'GPS Location Active'
+                            : busy
+                            ? 'Locating your truck…'
+                            : 'Location Services Offline',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          color: primaryColor,
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
                   available
-                      ? '${location.latitude!.toStringAsFixed(4)}, ${location.longitude!.toStringAsFixed(4)} (GPS Centered)'
-                      : _locationMessage(location.status),
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    color: isDark ? Colors.white70 : Colors.black87,
+                      ? (model!.locationLabel.isNotEmpty
+                            ? model.locationLabel
+                            : 'Lat: ${location!.latitude!.toStringAsFixed(4)}, Long: ${location.longitude!.toStringAsFixed(4)}')
+                      : _locationMessage(location?.status),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 12.5,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -240,691 +267,512 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              visualDensity: VisualDensity.compact,
-              side: BorderSide(
-                color: available ? const Color(0xFF2E7D32) : const Color(0xFFC62828),
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+          IconButton.filledTonal(
+            tooltip: available ? 'Refresh position' : 'Enable GPS',
+            style: IconButton.styleFrom(
+              backgroundColor: primaryColor.withValues(alpha: .15),
+              foregroundColor: primaryColor,
             ),
-            onPressed: () {
-              if (available) {
-                discover();
-              } else if (location.status == DeviceLocationStatus.serviceDisabled ||
-                  location.status == DeviceLocationStatus.permissionDeniedForever) {
-                context.read<NearbyServicesCubit>().openSettings();
-              } else {
-                discover();
-              }
-            },
-            child: Text(
-              available ? 'Refresh' : 'Enable',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 12,
-                color: available ? const Color(0xFF2E7D32) : const Color(0xFFC62828),
-              ),
+            icon: Icon(
+              available ? Icons.refresh_rounded : Icons.settings_outlined,
+              size: 20,
             ),
+            onPressed: busy
+                ? null
+                : () {
+                    if (location?.status ==
+                            DeviceLocationStatus.serviceDisabled ||
+                        location?.status ==
+                            DeviceLocationStatus.permissionDeniedForever) {
+                      context.read<NearbyServicesCubit>().openSettings();
+                    } else {
+                      discover();
+                    }
+                  },
           ),
         ],
       ),
     );
   }
 
-  // ─── 2. Modern Search Bar ───────────────────────────────────────────────────
+  // ─── 2. Highway Emergency Helplines ────────────────────────────────────────
 
-  Widget _buildSearchBar(BuildContext context, bool busy) {
+  Widget _buildEmergencyHelplines(BuildContext context) {
     final theme = Theme.of(context);
-    final cs = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF14241D) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: cs.outlineVariant.withValues(alpha: 0.7),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: TextField(
-        controller: search,
-        textInputAction: TextInputAction.search,
-        onSubmitted: (_) => discover(),
-        decoration: InputDecoration(
-          hintText: 'Search petrol pump, tyre puncture, hospital, mechanic...',
-          hintStyle: TextStyle(
-            fontSize: 12.5,
-            color: cs.onSurfaceVariant.withValues(alpha: 0.7),
-          ),
-          prefixIcon: Icon(
-            Icons.search_rounded,
-            color: cs.primary.withValues(alpha: 0.8),
-          ),
-          suffixIcon: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (search.text.isNotEmpty)
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  icon: const Icon(Icons.clear_rounded, size: 18),
-                  onPressed: () {
-                    search.clear();
-                    discover();
-                  },
-                ),
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: IconButton.filled(
-                  style: IconButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32),
-                    foregroundColor: Colors.white,
-                  ),
-                  visualDensity: VisualDensity.compact,
-                  tooltip: 'Search places',
-                  onPressed: busy ? null : discover,
-                  icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-                ),
-              ),
-            ],
-          ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        ),
-      ),
-    );
-  }
-
-  // ─── 3. Category Selector Carousel ──────────────────────────────────────────
-
-  Widget _buildCategorySelector(BuildContext context) {
-    final categories = [
+    final helplines = [
       (
-        type: null,
-        label: 'All Services',
-        icon: Icons.grid_view_rounded,
-        color: const Color(0xFF193F35),
+        label: '1033',
+        title: 'Highway SOS',
+        color: const Color(0xFFD32F2F),
+        icon: Icons.emergency_rounded,
+        phone: '1033',
       ),
       (
-        type: NearbyServiceType.fuel,
-        label: 'Fuel Pumps',
-        icon: Icons.local_gas_station_rounded,
-        color: const Color(0xFFD97706),
+        label: '108',
+        title: 'Ambulance',
+        color: const Color(0xFFC2185B),
+        icon: Icons.medical_services_rounded,
+        phone: '108',
       ),
       (
-        type: NearbyServiceType.truckStop,
-        label: 'Truck Lay-bys',
-        icon: Icons.local_parking_rounded,
-        color: const Color(0xFF2563EB),
+        label: '112',
+        title: 'Police',
+        color: const Color(0xFF1976D2),
+        icon: Icons.local_police_rounded,
+        phone: '112',
       ),
       (
-        type: NearbyServiceType.workshop,
-        label: 'Workshops',
-        icon: Icons.build_circle_rounded,
-        color: const Color(0xFF0D9488),
-      ),
-      (
-        type: NearbyServiceType.tyre,
-        label: 'Tyre Works',
-        icon: Icons.tire_repair_rounded,
-        color: const Color(0xFF059669),
-      ),
-      (
-        type: NearbyServiceType.weighbridge,
-        label: 'Weighbridges',
-        icon: Icons.scale_rounded,
-        color: const Color(0xFF7C3AED),
-      ),
-      (
-        type: NearbyServiceType.hospital,
-        label: 'Hospitals',
-        icon: Icons.local_hospital_rounded,
-        color: const Color(0xFFDC2626),
+        label: '101',
+        title: 'Fire',
+        color: const Color(0xFFF57C00),
+        icon: Icons.fire_extinguisher_rounded,
+        phone: '101',
       ),
     ];
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: categories.map((cat) {
-          final isSelected = type == cat.type;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: () => discover(
-                nextType: cat.type,
-                clearType: cat.type == null,
-              ),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? cat.color
-                      : Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isSelected
-                        ? cat.color
-                        : Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.6),
-                    width: isSelected ? 1.6 : 1,
-                  ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: cat.color.withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ]
-                      : [],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.shield_outlined, size: 16, color: Colors.red),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                'Highway Emergency Helplines (Toll-Free)',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                  color: isDark ? Colors.white70 : Colors.black87,
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      cat.icon,
-                      size: 16,
-                      color: isSelected ? Colors.white : cat.color,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      cat.label,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                        color: isSelected
-                            ? Colors.white
-                            : Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: helplines.map((item) {
+            return Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 3),
+                child: InkWell(
+                  onTap: () => _callNumber(item.phone),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: item.color.withValues(alpha: isDark ? .18 : .08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: item.color.withValues(alpha: .3),
+                        width: 1,
                       ),
                     ),
-                  ],
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(item.icon, size: 18, color: item.color),
+                        const SizedBox(height: 3),
+                        Text(
+                          item.label,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
+                            color: item.color,
+                          ),
+                        ),
+                        Text(
+                          item.title,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                            color: isDark ? Colors.white70 : Colors.black87,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  // ─── 3. Category Selector Carousel ─────────────────────────────────────────
+
+  Widget _buildCategorySelector(BuildContext context) {
+    final categories = [null, ...NearbyServiceType.values];
+
+    return SizedBox(
+      height: 110 * MediaQuery.textScalerOf(context).scale(1).clamp(1, 2.5),
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: categories.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final cat = categories[index];
+          final selected = type == cat;
+          final color = _categoryColor(cat);
+          final theme = Theme.of(context);
+          final isDark = theme.brightness == Brightness.dark;
+
+          return InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => selectCategory(cat),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 104,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+              decoration: BoxDecoration(
+                color: selected
+                    ? color.withValues(alpha: isDark ? .25 : .14)
+                    : isDark
+                    ? const Color(0xFF1C2822)
+                    : theme.colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: selected
+                      ? color
+                      : (isDark
+                            ? Colors.white.withValues(alpha: .08)
+                            : theme.colorScheme.outlineVariant.withValues(
+                                alpha: .5,
+                              )),
+                  width: selected ? 1.8 : 1,
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: selected ? .2 : .12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(_icon(cat), color: color, size: 20),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    cat?.label ?? 'All Services',
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                      color: selected
+                          ? color
+                          : (isDark
+                                ? Colors.white.withValues(alpha: 0.9)
+                                : Colors.black87),
+                    ),
+                  ),
+                ],
               ),
             ),
           );
-        }).toList(),
+        },
       ),
     );
   }
 
-  // ─── 4. Radius Filter Pills ─────────────────────────────────────────────────
+  // ─── 4. Search Bar ─────────────────────────────────────────────────────────
 
-  Widget _buildRadiusSelector(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF14241D) : cs.surfaceContainerHighest.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: cs.outlineVariant.withValues(alpha: 0.5),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.radar_rounded, size: 16, color: cs.primary),
-          const SizedBox(width: 8),
-          Text(
-            'Search radius:',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: cs.onSurfaceVariant,
-            ),
-          ),
-          const Spacer(),
-          for (final option in [5, 10, 25, 50])
-            Padding(
-              padding: const EdgeInsets.only(left: 6),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: () {
-                  setState(() => radiusKm = option);
+  Widget _buildSearchBar(BuildContext context, bool busy) {
+    return TextField(
+      controller: search,
+      textInputAction: TextInputAction.search,
+      onChanged: (_) {
+        setState(() {});
+        debounce?.cancel();
+        debounce = Timer(const Duration(milliseconds: 700), discover);
+      },
+      onSubmitted: (_) {
+        debounce?.cancel();
+        discover();
+      },
+      decoration: InputDecoration(
+        hintText: 'Search petrol pump, mechanic, puncture, dhaba…',
+        prefixIcon: const Icon(Icons.search_rounded),
+        suffixIcon: search.text.isEmpty
+            ? null
+            : IconButton(
+                tooltip: 'Clear search',
+                icon: const Icon(Icons.close_rounded),
+                onPressed: () {
+                  debounce?.cancel();
+                  search.clear();
+                  setState(() {});
                   discover();
                 },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: radiusKm == option
-                        ? const Color(0xFF2E7D32)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: radiusKm == option
-                          ? const Color(0xFF2E7D32)
-                          : cs.outlineVariant.withValues(alpha: 0.6),
-                    ),
-                  ),
-                  child: Text(
-                    '$option km',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: radiusKm == option ? FontWeight.w800 : FontWeight.w600,
-                      color: radiusKm == option ? Colors.white : cs.onSurface,
-                    ),
-                  ),
-                ),
               ),
-            ),
-        ],
+        filled: true,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
       ),
     );
   }
 
-  // ─── 5. Modern Service Card ─────────────────────────────────────────────────
-
-  Widget _buildServiceCard(BuildContext context, NearbyServiceModel item) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
-
-    final (color, icon) = switch (item.type) {
-      NearbyServiceType.fuel => (
-          const Color(0xFFD97706),
-          Icons.local_gas_station_rounded
-        ),
-      NearbyServiceType.truckStop => (
-          const Color(0xFF2563EB),
-          Icons.local_parking_rounded
-        ),
-      NearbyServiceType.workshop => (
-          const Color(0xFF0D9488),
-          Icons.build_circle_rounded
-        ),
-      NearbyServiceType.tyre => (
-          const Color(0xFF059669),
-          Icons.tire_repair_rounded
-        ),
-      NearbyServiceType.weighbridge => (
-          const Color(0xFF7C3AED),
-          Icons.scale_rounded
-        ),
-      NearbyServiceType.hospital => (
-          const Color(0xFFDC2626),
-          Icons.local_hospital_rounded
-        ),
-    };
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF13251D) : cs.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: cs.outlineVariant.withValues(alpha: 0.65),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(16),
+  Widget _buildCategorySection(
+    BuildContext context,
+    NearbyServicesScreenModel model,
+    NearbyServiceType category,
+  ) {
+    final items = model.services
+        .where((item) => item.type == category)
+        .toList();
+    final loading = model.loadingCategories.contains(category);
+    final error = model.categoryErrors[category];
+    final scale = MediaQuery.textScalerOf(context).scale(1);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Category Icon Badge
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: color.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Icon(icon, color: color, size: 22),
-              ),
-              const SizedBox(width: 12),
-
-              // Title and Category Label
+              Icon(_icon(category), color: _categoryColor(category)),
+              const SizedBox(width: 8),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.name,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: color.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            item.type.label,
-                            style: TextStyle(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w700,
-                              color: color,
-                            ),
-                          ),
-                        ),
-                        if (item.distanceKm != null) ...[
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.near_me_rounded,
-                            size: 12,
-                            color: cs.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            '${item.distanceKm!.toStringAsFixed(1)} km away',
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
-                              color: cs.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ],
+                child: Text(
+                  category.label,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
-
-              // Rating or Open Pill
-              if (item.rating != null && item.rating! > 0)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF59E0B).withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.star_rounded,
-                        size: 14,
-                        color: Color(0xFFD97706),
-                      ),
-                      const SizedBox(width: 3),
-                      Text(
-                        item.rating!.toStringAsFixed(1),
-                        style: const TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFFD97706),
-                        ),
-                      ),
-                    ],
-                  ),
+              if (loading)
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 ),
             ],
           ),
-
-          // Address if available
-          if (item.address.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.location_on_outlined,
-                  size: 14,
-                  color: cs.onSurfaceVariant,
+          const SizedBox(height: 10),
+          if (items.isNotEmpty)
+            LayoutBuilder(
+              builder: (context, constraints) => SizedBox(
+                height: 290 * scale.clamp(1, 2.5),
+                child: ListView.separated(
+                  key: ValueKey('services-${category.apiValue}'),
+                  scrollDirection: Axis.horizontal,
+                  itemCount: items.length,
+                  separatorBuilder: (_, index) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) => SizedBox(
+                    width: constraints.maxWidth < 340
+                        ? constraints.maxWidth
+                        : 300,
+                    child: _buildServiceCard(context, items[index]),
+                  ),
                 ),
-                const SizedBox(width: 5),
+              ),
+            ),
+          if (error != null)
+            Row(
+              children: [
+                const Icon(Icons.cloud_off_outlined, size: 18),
+                const SizedBox(width: 8),
+                const Expanded(child: Text('Could not load this category.')),
+                TextButton(
+                  onPressed: context.read<NearbyServicesCubit>().state.busy
+                      ? null
+                      : () => context.read<NearbyServicesCubit>().retryCategory(
+                          category,
+                        ),
+                  child: const Text('Retry'),
+                ),
+              ],
+            )
+          else if (items.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              child: Text(
+                loading
+                    ? 'Finding nearby services…'
+                    : 'No services found within ${model.categoryRadii[category] ?? 50} km.',
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildServiceCard(BuildContext context, NearbyServiceModel item) {
+    final theme = Theme.of(context);
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(_icon(item.type), color: _categoryColor(item.type)),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    item.address,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: cs.onSurfaceVariant,
-                      height: 1.3,
-                    ),
+                    item.name,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ],
             ),
-          ],
-
-          const SizedBox(height: 14),
-          const Divider(height: 1),
-          const SizedBox(height: 12),
-
-          // Navigation CTA Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              if (item.openNow != null)
-                Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: item.openNow!
-                            ? const Color(0xFF2E7D32)
-                            : const Color(0xFFC62828),
-                        shape: BoxShape.circle,
-                      ),
+            const SizedBox(height: 8),
+            Text(
+              [
+                if (item.distanceKm != null)
+                  '${item.distanceKm!.toStringAsFixed(1)} km',
+                if (item.rating != null) '★ ${item.rating!.toStringAsFixed(1)}',
+              ].join(' · '),
+              style: theme.textTheme.bodySmall,
+            ),
+            if (item.address.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(item.address, maxLines: 2, overflow: TextOverflow.ellipsis),
+            ],
+            if (item.openNow != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                item.openNow! ? 'Open now' : 'Closed now',
+                style: TextStyle(
+                  color: item.openNow! ? Colors.green : theme.colorScheme.error,
+                ),
+              ),
+            ],
+            if (item.truckFriendly) const Text('Truck access mapped'),
+            const Spacer(),
+            Row(
+              children: [
+                if (item.phone.isNotEmpty) ...[
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () =>
+                          _callNumber(item.phone.split(RegExp(r'[;,]')).first),
+                      icon: const Icon(Icons.call_outlined, size: 17),
+                      label: const Text('Call'),
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      item.openNow! ? 'Open Now' : 'Check Hours',
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w700,
-                        color: item.openNow!
-                            ? const Color(0xFF2E7D32)
-                            : const Color(0xFFC62828),
-                      ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () => _open(
+                      Uri.https('www.google.com', '/maps/dir/', {
+                        'api': '1',
+                        'destination': '${item.latitude},${item.longitude}',
+                        'travelmode': 'driving',
+                        if (item.provider == 'google')
+                          'destination_place_id': item.id,
+                      }),
                     ),
-                  ],
-                )
-              else
-                const SizedBox.shrink(),
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF1565C0),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    icon: const Icon(Icons.navigation_outlined, size: 17),
+                    label: const Text('Navigate'),
                   ),
                 ),
-                onPressed: () => _navigate(item),
-                icon: const Icon(Icons.directions_outlined, size: 18),
-                label: const Text(
-                  'Directions',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+              ],
+            ),
+            if (item.provider.isNotEmpty)
+              InkWell(
+                onTap: () => _open(
+                  Uri.parse(
+                    item.provider == 'google'
+                        ? 'https://maps.google.com'
+                        : 'https://www.openstreetmap.org/copyright',
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    item.provider == 'google'
+                        ? 'Google Maps'
+                        : '© OpenStreetMap contributors',
+                    style: theme.textTheme.labelSmall,
+                  ),
                 ),
               ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.6),
+            for (final attribution in item.attributions)
+              if ((attribution['displayName']?.toString() ?? '').isNotEmpty)
+                Text(
+                  attribution['displayName'].toString(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall,
+                ),
+          ],
         ),
       ),
-      child: Column(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: const Color(0xFF2E7D32).withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.location_searching_rounded,
-              color: Color(0xFF2E7D32),
-              size: 28,
-            ),
-          ),
-          const SizedBox(height: 14),
-          const Text(
-            'No Services Found in this Radius',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Try widening the search radius (e.g. 25 km or 50 km) or selecting "All Services" above.',
-            style: TextStyle(
-              fontSize: 12.5,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            onPressed: () {
-              setState(() => radiusKm = 25);
-              discover(clearType: true);
-            },
-            icon: const Icon(Icons.radar_rounded, size: 18),
-            label: const Text('Expand to 25 km & All Services'),
-          ),
-        ],
+    );
+  }
+
+  // ─── 7. Empty & Offline Notices ───────────────────────────────────────────
+
+  Widget _buildGpsOfflineNotice(
+    BuildContext context,
+    DeviceLocationStatus? status,
+  ) {
+    return AppEmptyState(
+      'Turn on GPS to find essentials',
+      _locationMessage(status),
+      icon: Icons.gps_off_rounded,
+      action: AppButton(
+        label: 'Open Phone Location Settings',
+        icon: Icons.settings_outlined,
+        onPressed: () => context.read<NearbyServicesCubit>().openSettings(),
       ),
     );
   }
 
-  Widget _buildLocationHelpCard(BuildContext context, DeviceLocation location) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFFC62828).withValues(alpha: 0.35),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFC62828).withValues(alpha: 0.14),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.gps_off_rounded,
-                  color: Color(0xFFC62828),
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Turn on GPS Location',
-                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
-                    ),
-                    Text(
-                      _locationMessage(location.status),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          FilledButton.icon(
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF2E7D32),
-              foregroundColor: Colors.white,
-              minimumSize: const Size(double.infinity, 46),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            ),
-            icon: const Icon(Icons.location_on_rounded, size: 20),
-            label: const Text(
-              'Enable GPS Location Now',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
-            ),
-            onPressed: () {
-              if (location.status == DeviceLocationStatus.serviceDisabled ||
-                  location.status == DeviceLocationStatus.permissionDeniedForever) {
-                context.read<NearbyServicesCubit>().openSettings();
-              } else {
-                discover();
-              }
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _navigate(NearbyServiceModel item) async {
-    final uri = Uri.https('www.google.com', '/maps/dir/', {
-      'api': '1',
-      'destination': '${item.latitude},${item.longitude}',
-      'travelmode': 'driving',
-    });
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication) && mounted) {
-      showNotice(context, 'Could not open Google Maps navigation.');
-    }
-  }
-
-  String _locationMessage(DeviceLocationStatus status) => switch (status) {
+  String _locationMessage(DeviceLocationStatus? status) => switch (status) {
     DeviceLocationStatus.serviceDisabled =>
-      'Turn on device location services, then return here.',
-    DeviceLocationStatus.permissionDenied =>
-      'Allow location access to search the services around you.',
+      'Turn on GPS, then return to discover highway essentials.',
     DeviceLocationStatus.permissionDeniedForever =>
-      'Location permission is blocked. Enable it in phone settings.',
-    DeviceLocationStatus.ready => '',
+      'Enable location permission in phone settings.',
+    DeviceLocationStatus.permissionDenied =>
+      'Allow location access to find roadside assistance.',
+    _ =>
+      'Use your current location to discover roadside stops along your route.',
+  };
+
+  IconData _icon(NearbyServiceType? category) => switch (category) {
+    null => Icons.grid_view_rounded,
+    NearbyServiceType.fuel => Icons.local_gas_station_rounded,
+    NearbyServiceType.truckStop => Icons.local_parking_rounded,
+    NearbyServiceType.weighbridge => Icons.scale_rounded,
+    NearbyServiceType.workshop => Icons.build_rounded,
+    NearbyServiceType.tyre => Icons.tire_repair_rounded,
+    NearbyServiceType.hospital => Icons.local_hospital_rounded,
+    NearbyServiceType.food => Icons.restaurant_rounded,
+    NearbyServiceType.hotel => Icons.hotel_rounded,
+    NearbyServiceType.serviceCenter => Icons.car_repair_rounded,
+  };
+
+  Color _categoryColor(NearbyServiceType? category) => switch (category) {
+    null => const Color(0xFF1E88E5),
+    NearbyServiceType.fuel => const Color(0xFF2E7D32),
+    NearbyServiceType.truckStop => const Color(0xFF0288D1),
+    NearbyServiceType.weighbridge => const Color(0xFF00897B),
+    NearbyServiceType.workshop => const Color(0xFFF57C00),
+    NearbyServiceType.tyre => const Color(0xFF7B1FA2),
+    NearbyServiceType.hospital => const Color(0xFFE53935),
+    NearbyServiceType.food => const Color(0xFFD84315),
+    NearbyServiceType.hotel => const Color(0xFF5D4037),
+    NearbyServiceType.serviceCenter => const Color(0xFF455A64),
   };
 }

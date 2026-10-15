@@ -412,6 +412,10 @@ enabled = true
 # validates it through a service-role-only RPC before accessing a job.
 [functions.send-push]
 verify_jwt = false
+
+# Authenticated explicitly with getUser so both signing-key types are accepted.
+[functions.nearby-services]
+verify_jwt = false
 # Directory under `supabase/` where declarative files are written.
 # declarative_schema_path = "./schemas"
 # JSON string passed through to pg-delta SQL formatting. When omitted, SQL is

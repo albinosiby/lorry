@@ -10,6 +10,10 @@ import '../../auth/cubit/session_cubit.dart';
 import '../cubit/profile_cubit.dart';
 import '../models/profile_screen_model.dart';
 import '../models/profile_model.dart';
+import '../../driver_documents/cubit/driver_documents_cubit.dart';
+import '../../driver_documents/models/driver_document_model.dart';
+import '../../verification/cubit/profile_documents_cubit.dart';
+import '../../verification/models/profile_document_model.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key, this.setup = false});
@@ -32,6 +36,16 @@ class _ProfileScreenState extends State<ProfileScreen>
   bool _editExpanded = false;
   late final AnimationController _editAnim;
   late final Animation<double> _editFade;
+
+  // Gender and Setup Documents
+  String gender = 'Male';
+  Uint8List? _customerAadhaarBytes;
+  String? _customerAadhaarFilename;
+  Uint8List? _driverAadhaarBytes;
+  String? _driverAadhaarFilename;
+  Uint8List? _driverLicenseBytes;
+  String? _driverLicenseFilename;
+  bool _isSubmittingSetup = false;
 
   @override
   void initState() {
@@ -63,16 +77,15 @@ class _ProfileScreenState extends State<ProfileScreen>
       address.text = model.profile?.address ?? '';
       companyName.text = model.profile?.companyName ?? '';
       photoPath = model.profile?.photoPath;
+      if (model.profile?.gender != null && model.profile!.gender!.isNotEmpty) {
+        gender = model.profile!.gender!;
+      }
       populated = true;
     }
   }
 
   Future<void> save() async {
     if (!form.currentState!.validate()) return;
-    if (photoPath?.trim().isEmpty ?? true) {
-      showNotice(context, 'Add a profile photo to complete your account.');
-      return;
-    }
     final session = context.read<SessionCubit>();
     if (await context.read<ProfileCubit>().save(
       name.text,
@@ -81,9 +94,208 @@ class _ProfileScreenState extends State<ProfileScreen>
       address: address.text,
       companyName: companyName.text,
       photoPath: photoPath,
+      gender: gender,
     )) {
       if (!mounted) return;
       await session.refresh();
+    }
+  }
+
+  Future<void> _pickDocumentImage({
+    required String title,
+    required void Function(Uint8List bytes, String filename) onPicked,
+  }) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Upload $title',
+                style: Theme.of(sheetContext).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.camera_alt_outlined),
+                title: const Text('Take photo with camera'),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                onTap: () async {
+                  Navigator.pop(sheetContext);
+                  try {
+                    final file = await ImagePicker().pickImage(
+                      source: ImageSource.camera,
+                      imageQuality: 85,
+                      maxWidth: 1600,
+                    );
+                    if (file != null && mounted) {
+                      final bytes = await file.readAsBytes();
+                      setState(() => onPicked(bytes, file.name));
+                    }
+                  } catch (e) {
+                    if (mounted) showNotice(context, 'Camera error: $e');
+                  }
+                },
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Choose from gallery or files'),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                onTap: () async {
+                  Navigator.pop(sheetContext);
+                  try {
+                    final file = await FilePicker.pickFile(
+                      type: FileType.custom,
+                      allowedExtensions: const [
+                        'jpg',
+                        'jpeg',
+                        'png',
+                        'webp',
+                        'pdf',
+                      ],
+                    );
+                    if (file != null && mounted) {
+                      final bytes = await file.readAsBytes();
+                      setState(() => onPicked(bytes, file.name));
+                    }
+                  } catch (e) {
+                    if (mounted) showNotice(context, 'File picker error: $e');
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> saveSetup() async {
+    if (!form.currentState!.validate()) return;
+
+    if (phone.text.trim().isEmpty ||
+        !ProfileModel.isValidIndianMobile(phone.text)) {
+      showNotice(
+        context,
+        'Please enter a valid 10-digit Indian mobile number.',
+      );
+      return;
+    }
+
+    if (address.text.trim().isEmpty) {
+      showNotice(
+        context,
+        role == UserRole.shipper
+            ? 'Please enter your pickup or delivery address.'
+            : 'Please enter your driver address.',
+      );
+      return;
+    }
+
+    // Role-specific document checks
+    if (role == UserRole.shipper) {
+      if (_customerAadhaarBytes == null) {
+        showNotice(
+          context,
+          'Please upload your Aadhaar card image to continue.',
+        );
+        return;
+      }
+    } else {
+      if (_driverAadhaarBytes == null) {
+        showNotice(context, 'Please upload your Aadhaar card to continue.');
+        return;
+      }
+      if (_driverLicenseBytes == null) {
+        showNotice(context, 'Please upload your Driving Licence to continue.');
+        return;
+      }
+    }
+
+    setState(() => _isSubmittingSetup = true);
+
+    try {
+      // 1. Upload documents if provided
+      if (role == UserRole.shipper && _customerAadhaarBytes != null) {
+        try {
+          final profileDocsCubit = context.read<ProfileDocumentsCubit>();
+          await profileDocsCubit.upload(
+            ProfileDocumentDraft(
+              bytes: _customerAadhaarBytes!,
+              filename: _customerAadhaarFilename ?? 'aadhaar.jpg',
+              contentType: 'image/jpeg',
+              type: 'identity',
+            ),
+          );
+        } catch (e) {
+          debugPrint('[SETUP_DOC_UPLOAD_WARN] $e');
+        }
+      } else if (role == UserRole.driver) {
+        final driverDocsCubit = context.read<DriverDocumentsCubit>();
+        if (_driverAadhaarBytes != null) {
+          try {
+            await driverDocsCubit.upload(
+              DriverDocumentDraft(
+                type: DriverDocumentType.identity,
+                bytes: _driverAadhaarBytes!,
+                filename: _driverAadhaarFilename ?? 'driver_aadhaar.jpg',
+                contentType: 'image/jpeg',
+              ),
+            );
+          } catch (e) {
+            debugPrint('[SETUP_DOC_UPLOAD_WARN] $e');
+          }
+        }
+        if (_driverLicenseBytes != null) {
+          try {
+            await driverDocsCubit.upload(
+              DriverDocumentDraft(
+                type: DriverDocumentType.drivingLicense,
+                bytes: _driverLicenseBytes!,
+                filename: _driverLicenseFilename ?? 'driving_license.jpg',
+                contentType: 'image/jpeg',
+              ),
+            );
+          } catch (e) {
+            debugPrint('[SETUP_DOC_UPLOAD_WARN] $e');
+          }
+        }
+      }
+
+      // 2. Save profile
+      final session = context.read<SessionCubit>();
+      final ok = await context.read<ProfileCubit>().save(
+        name.text.trim(),
+        ProfileModel.normalizeIndianMobile(phone.text),
+        role,
+        address: address.text.trim(),
+        companyName: companyName.text.trim(),
+        photoPath: photoPath,
+        gender: gender,
+      );
+
+      if (ok) {
+        if (!mounted) return;
+        showNotice(context, 'Profile setup completed successfully!');
+        await session.refresh();
+        if (!mounted) return;
+        context.go('/home');
+      }
+    } catch (e) {
+      if (mounted) showNotice(context, 'Failed to save profile: $e');
+    } finally {
+      if (mounted) setState(() => _isSubmittingSetup = false);
     }
   }
 
@@ -246,20 +458,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (widget.setup) ...[
-                      PageHeading(
-                        'Your account',
-                        'Make it yours.',
-                        'Choose how you\'ll use LORRY LINK. Your primary role stays fixed.',
-                      ),
-                      _buildSetupAvatarSection(state),
-                      const SizedBox(height: 24),
-                      _buildFormFields(model, state),
-                      const SizedBox(height: 16),
-                      ..._buildRoleSelector(),
-                      const SizedBox(height: 24),
-                      _buildSetupActions(model, state),
-                    ] else ...[
+                    if (widget.setup)
+                      _buildSetupView(model, state)
+                    else ...[
                       _buildProfileHero(model, state, isShipper: isShipper),
                       const SizedBox(height: 20),
                       _buildEditProfileTile(model, state),
@@ -836,64 +1037,387 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  // ─── Setup avatar section ─────────────────────────────────────────────────
+  // ─── Setup Profile View ───────────────────────────────────────────────────
 
-  Widget _buildSetupAvatarSection(ResourceState<ProfileScreenModel> state) {
-    final hasPhoto =
-        _localPhotoBytes != null || (photoPath?.startsWith('http') == true);
-    return Center(
-      child: Column(
-        children: [
-          Stack(
-            alignment: Alignment.center,
+  Widget _buildSetupView(
+    ProfileScreenModel model,
+    ResourceState<ProfileScreenModel> state,
+  ) {
+    final theme = Theme.of(context);
+    final isCustomer = role == UserRole.shipper;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        PageHeading(
+          'PROFILE SETUP',
+          isCustomer ? 'Complete Customer Profile' : 'Complete Driver Profile',
+          isCustomer
+              ? 'You selected: Get a truck for your load. Fill in your contact details and upload your Aadhaar image.'
+              : 'You selected: Get load for your truck. Fill in your driver address and upload your mandatory session documents.',
+        ),
+        const SizedBox(height: 8),
+
+        // Role indicator banner
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: (isCustomer
+                    ? const Color(0xFF1E88E5)
+                    : const Color(0xFF2E7D32))
+                .withValues(alpha: isDark ? .2 : .1),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: (isCustomer
+                      ? const Color(0xFF1E88E5)
+                      : const Color(0xFF2E7D32))
+                  .withValues(alpha: .3),
+            ),
+          ),
+          child: Row(
             children: [
-              CircleAvatar(
-                radius: 38,
-                backgroundImage: hasPhoto
-                    ? (_localPhotoBytes != null
-                          ? MemoryImage(_localPhotoBytes!) as ImageProvider
-                          : NetworkImage(photoPath!))
-                    : null,
-                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                child: hasPhoto
-                    ? null
-                    : Text(
-                        name.text.isEmpty ? 'L' : name.text[0].toUpperCase(),
-                        style: Theme.of(context).textTheme.headlineLarge,
-                      ),
+              Icon(
+                isCustomer
+                    ? Icons.inventory_2_rounded
+                    : Icons.local_shipping_rounded,
+                color: isCustomer
+                    ? const Color(0xFF1E88E5)
+                    : const Color(0xFF2E7D32),
+                size: 24,
               ),
-              if (_isUploadingPhoto)
-                Container(
-                  width: 76,
-                  height: 76,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.black.withValues(alpha: .45),
-                  ),
-                  child: const Center(
-                    child: SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: Colors.white,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isCustomer
+                          ? 'Getting trucks for your load'
+                          : 'Getting load for your truck',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
                       ),
                     ),
-                  ),
+                    Text(
+                      isCustomer
+                          ? 'Customer / Shipper Account'
+                          : 'Transporter / Driver Account',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.white70 : Colors.black87,
+                      ),
+                    ),
+                  ],
                 ),
+              ),
             ],
           ),
-          TextButton.icon(
-            onPressed: state.busy || _isUploadingPhoto ? null : choosePhoto,
-            icon: const Icon(Icons.camera_alt_outlined),
-            label: const Text('Add profile photo'),
+        ),
+        const SizedBox(height: 20),
+
+        // 1. Personal & Contact Details
+        Text(
+          'Personal Information',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            fontSize: 16,
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Full Name (Collected in sign up)
+        AppTextField(
+          controller: name,
+          label: 'Full name',
+          validator: Validators.name,
+          maxLength: 80,
+        ),
+        const SizedBox(height: 4),
+
+        // Phone Number
+        AppTextField(
+          controller: phone,
+          label: 'Phone number',
+          hint: '98765 43210',
+          prefixText: '+91 ',
+          keyboardType: TextInputType.phone,
+          maxLength: 10,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (v) {
+            final value = v?.trim() ?? '';
+            if (value.isEmpty) return 'Phone number is required.';
+            return ProfileModel.isValidIndianMobile(value)
+                ? null
+                : 'Enter a valid 10-digit Indian mobile number.';
+          },
+        ),
+        const SizedBox(height: 4),
+
+        // Address
+        AppTextField(
+          controller: address,
+          label: isCustomer ? 'Pickup / Business address' : 'Driver address',
+          hint: isCustomer
+              ? 'Your warehouse, factory, office or pickup address'
+              : 'Your residential or operating base address',
+          lines: 2,
+          maxLength: 300,
+          validator: Validators.required,
+        ),
+        const SizedBox(height: 8),
+
+        // Gender Selector
+        Text(
+          'Gender',
+          style: theme.textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: ['Male', 'Female', 'Other'].map((g) {
+            final selected = gender == g;
+            return Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: ChoiceChip(
+                label: Text(g),
+                selected: selected,
+                avatar: Icon(
+                  g == 'Male'
+                      ? Icons.male_rounded
+                      : g == 'Female'
+                      ? Icons.female_rounded
+                      : Icons.transgender_rounded,
+                  size: 18,
+                ),
+                onSelected: (_) => setState(() => gender = g),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 24),
+
+        // 2. Documents Section
+        if (isCustomer) ...[
+          Text(
+            'Verification Document',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Upload your Aadhaar card image to verify your customer account.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: isDark ? Colors.white70 : Colors.black54,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildDocumentPickerCard(
+            title: 'Aadhaar Card',
+            subtitle: 'Front side or full image of Aadhaar',
+            bytes: _customerAadhaarBytes,
+            filename: _customerAadhaarFilename,
+            icon: Icons.credit_card_rounded,
+            onPick: () => _pickDocumentImage(
+              title: 'Aadhaar Card',
+              onPicked: (bytes, filename) {
+                _customerAadhaarBytes = bytes;
+                _customerAadhaarFilename = filename;
+              },
+            ),
+          ),
+        ] else ...[
+          Text(
+            'Required Driver Documents',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Aadhaar card and Driving Licence are mandatory to start driving sessions.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: isDark ? Colors.white70 : Colors.black54,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildDocumentPickerCard(
+            title: 'Aadhaar Card',
+            subtitle: 'Government issued Aadhaar identification card',
+            bytes: _driverAadhaarBytes,
+            filename: _driverAadhaarFilename,
+            icon: Icons.badge_rounded,
+            onPick: () => _pickDocumentImage(
+              title: 'Aadhaar Card',
+              onPicked: (bytes, filename) {
+                _driverAadhaarBytes = bytes;
+                _driverAadhaarFilename = filename;
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildDocumentPickerCard(
+            title: 'Driving Licence',
+            subtitle: 'Valid commercial or transport driving licence',
+            bytes: _driverLicenseBytes,
+            filename: _driverLicenseFilename,
+            icon: Icons.drive_eta_rounded,
+            onPick: () => _pickDocumentImage(
+              title: 'Driving Licence',
+              onPicked: (bytes, filename) {
+                _driverLicenseBytes = bytes;
+                _driverLicenseFilename = filename;
+              },
+            ),
+          ),
+        ],
+        const SizedBox(height: 32),
+
+        // 3. Complete CTA
+        AppButton(
+          label: isCustomer
+              ? 'Complete Profile & Go to Home'
+              : 'Complete Profile & Start Driving',
+          icon: Icons.arrow_forward_rounded,
+          busy: _isSubmittingSetup || state.busy,
+          onPressed: saveSetup,
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildDocumentPickerCard({
+    required String title,
+    required String subtitle,
+    required Uint8List? bytes,
+    required String? filename,
+    required IconData icon,
+    required VoidCallback onPick,
+  }) {
+    final theme = Theme.of(context);
+    final hasDoc = bytes != null;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: hasDoc
+            ? Colors.green.withValues(alpha: isDark ? .12 : .06)
+            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: .5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: hasDoc
+              ? Colors.green.withValues(alpha: .5)
+              : theme.colorScheme.outline.withValues(alpha: .2),
+          width: 1.5,
+        ),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          if (hasDoc)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.memory(
+                bytes,
+                width: 54,
+                height: 54,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => Container(
+                  width: 54,
+                  height: 54,
+                  color: Colors.green.withValues(alpha: .2),
+                  child: const Icon(
+                    Icons.check_circle_rounded,
+                    color: Colors.green,
+                  ),
+                ),
+              ),
+            )
+          else
+            Container(
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: theme.colorScheme.primary, size: 28),
+            ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: hasDoc
+                            ? Colors.green.withValues(alpha: .15)
+                            : Colors.orange.withValues(alpha: .15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        hasDoc ? 'Attached' : 'Required',
+                        style: TextStyle(
+                          color: hasDoc ? Colors.green : Colors.orange.shade800,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  hasDoc ? (filename ?? 'File attached') : subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: isDark ? Colors.white70 : Colors.black54,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          OutlinedButton(
+            onPressed: onPick,
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(hasDoc ? 'Change' : 'Upload'),
           ),
         ],
       ),
     );
   }
 
-  // ─── Form fields ──────────────────────────────────────────────────────────
+  // ─── Form fields (in-app profile edit) ────────────────────────────────────
 
   Widget _buildFormFields(
     ProfileScreenModel model,
@@ -933,6 +1457,27 @@ class _ProfileScreenState extends State<ProfileScreen>
           maxLength: 300,
           validator: Validators.required,
         ),
+        const SizedBox(height: 8),
+        Text(
+          'Gender',
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: ['Male', 'Female', 'Other'].map((g) {
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ChoiceChip(
+                label: Text(g),
+                selected: gender == g,
+                onSelected: (_) => setState(() => gender = g),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 12),
         AppTextField(
           controller: companyName,
           label: 'Company / business name',
@@ -940,48 +1485,6 @@ class _ProfileScreenState extends State<ProfileScreen>
           maxLength: 120,
         ),
       ],
-    );
-  }
-
-  // ─── Role selector (setup only) ───────────────────────────────────────────
-
-  List<Widget> _buildRoleSelector() {
-    return UserRole.values
-        .map(
-          (r) => Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: ListTile(
-              leading: Icon(
-                r == UserRole.shipper
-                    ? Icons.inventory_2_outlined
-                    : Icons.local_shipping_outlined,
-              ),
-              title: Text(r.label),
-              subtitle: Text(
-                r == UserRole.shipper
-                    ? 'Post parcels or loads and choose a driver'
-                    : 'Find loads and manage trips',
-              ),
-              trailing: Icon(
-                role == r ? Icons.radio_button_checked : Icons.radio_button_off,
-              ),
-              onTap: () => setState(() => role = r),
-            ),
-          ),
-        )
-        .toList();
-  }
-
-  // ─── Setup actions ────────────────────────────────────────────────────────
-
-  Widget _buildSetupActions(
-    ProfileScreenModel model,
-    ResourceState<ProfileScreenModel> state,
-  ) {
-    return AppButton(
-      label: widget.setup ? 'Start my journey' : 'Save changes',
-      busy: state.busy,
-      onPressed: save,
     );
   }
 }

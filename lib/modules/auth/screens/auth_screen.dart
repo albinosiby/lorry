@@ -12,8 +12,9 @@ import '../models/auth_models.dart';
 enum AuthScreenMode { signIn, signUp, forgot, reset }
 
 class AuthScreen extends StatefulWidget {
-  const AuthScreen({super.key, required this.mode});
+  const AuthScreen({super.key, required this.mode, this.initialRole});
   final AuthScreenMode mode;
+  final UserRole? initialRole;
   @override
   State<AuthScreen> createState() => _AuthScreenState();
 }
@@ -24,7 +25,14 @@ class _AuthScreenState extends State<AuthScreen> {
       email = TextEditingController(),
       password = TextEditingController(),
       confirmation = TextEditingController();
-  UserRole role = UserRole.shipper;
+  late UserRole role;
+
+  @override
+  void initState() {
+    super.initState();
+    role = widget.initialRole ?? UserRole.shipper;
+  }
+
   @override
   void dispose() {
     name.dispose();
@@ -66,7 +74,8 @@ class _AuthScreenState extends State<AuthScreen> {
           ? null
           : IconButton(
               icon: const Icon(Icons.arrow_back),
-              onPressed: () => context.go('/welcome'),
+              onPressed: () =>
+                  context.go(signup ? '/role-selection' : '/welcome'),
             ),
     ),
     body: PageBody(
@@ -84,16 +93,24 @@ class _AuthScreenState extends State<AuthScreen> {
               const Brand(),
               const SizedBox(height: 36),
               PageHeading(
-                'Your journey starts here',
                 signup
-                    ? 'Let’s get you moving.'
+                    ? (role == UserRole.shipper
+                          ? 'CUSTOMER SIGN UP'
+                          : 'DRIVER SIGN UP')
+                    : 'Your journey starts here',
+                signup
+                    ? (role == UserRole.shipper
+                          ? 'Get a truck for your load.'
+                          : 'Get load for your truck.')
                     : forgot
                     ? 'Forgot your password?'
                     : reset
                     ? 'A fresh start.'
                     : 'Welcome back.',
                 signup
-                    ? 'Create your account to connect with the road.'
+                    ? (role == UserRole.shipper
+                          ? 'Create your account to connect with verified trucks and ship easily.'
+                          : 'Create your account to find high-paying freight and start hauling.')
                     : forgot
                     ? 'We’ll send a link to help you get back in.'
                     : reset
@@ -131,37 +148,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   validator: (v) =>
                       v != password.text ? 'Passwords must match.' : null,
                 ),
-              if (signup) ...[
-                const Text(
-                  'I’m here to',
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: UserRole.values
-                      .map(
-                        (r) => ChoiceChip(
-                          label: Text(
-                            r == UserRole.shipper
-                                ? 'Post a parcel or load'
-                                : 'Find loads',
-                          ),
-                          avatar: Icon(
-                            r == UserRole.shipper
-                                ? Icons.inventory_2_outlined
-                                : Icons.local_shipping_outlined,
-                            size: 18,
-                          ),
-                          selected: role == r,
-                          onSelected: (_) => setState(() => role = r),
-                        ),
-                      )
-                      .toList(),
-                ),
-                const SizedBox(height: 24),
-              ],
+
               if (!signup && !forgot && !reset)
                 Align(
                   alignment: Alignment.centerRight,

@@ -9,6 +9,7 @@ abstract interface class IProfileRepository {
     String? address,
     String? companyName,
     String? photoPath,
+    String? gender,
   });
   Future<String> uploadPhoto(Uint8List bytes);
 }

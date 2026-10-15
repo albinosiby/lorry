@@ -1,144 +1,38 @@
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
-type ServiceType = "fuel" | "truck_stop" | "weighbridge" | "workshop" | "tyre" | "hospital";
-
-const supportedTypes: Record<Exclude<ServiceType, "weighbridge">, string> = {
-  fuel: "gas_station",
-  truck_stop: "truck_stop",
-  workshop: "car_repair",
-  tyre: "tire_shop",
-  hospital: "hospital",
-};
-
-const fieldMask = [
-  "places.id",
-  "places.displayName",
-  "places.formattedAddress",
-  "places.location",
-  "places.rating",
-  "places.regularOpeningHours.openNow",
-].join(",");
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
-
-function distanceKm(fromLat: number, fromLng: number, toLat: number, toLng: number) {
-  const radians = (value: number) => value * Math.PI / 180;
-  const dLat = radians(toLat - fromLat);
-  const dLng = radians(toLng - fromLng);
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(radians(fromLat)) * Math.cos(radians(toLat)) * Math.sin(dLng / 2) ** 2;
-  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function toService(place: Record<string, unknown>, type: ServiceType, latitude: number, longitude: number) {
-  const location = place.location as { latitude?: number; longitude?: number } | undefined;
-  const pointLat = location?.latitude;
-  const pointLng = location?.longitude;
-  if (typeof pointLat !== "number" || typeof pointLng !== "number") return null;
-  const displayName = place.displayName as { text?: string } | undefined;
-  const opening = place.regularOpeningHours as { openNow?: boolean } | undefined;
-  return {
-    id: String(place.id ?? ""),
-    place_id: String(place.id ?? ""),
-    service_type: type,
-    name: displayName?.text ?? "Nearby service",
-    address: String(place.formattedAddress ?? ""),
-    latitude: pointLat,
-    longitude: pointLng,
-    distance_km: Number(distanceKm(latitude, longitude, pointLat, pointLng).toFixed(2)),
-    rating: typeof place.rating === "number" ? place.rating : null,
-    is_open_now: typeof opening?.openNow === "boolean" ? opening.openNow : null,
-  };
-}
-
-async function googleSearch({
-  key,
-  latitude,
-  longitude,
-  radiusKm,
-  type,
-  query,
-}: {
-  key: string;
-  latitude: number;
-  longitude: number;
-  radiusKm: number;
-  type: ServiceType;
-  query?: string;
-}) {
-  const radiusMeters = radiusKm * 1000;
-  const textSearch = type === "weighbridge" || Boolean(query);
-  const url = textSearch
-    ? "https://places.googleapis.com/v1/places:searchText"
-    : "https://places.googleapis.com/v1/places:searchNearby";
-  const body = textSearch
-    ? {
-        textQuery: query?.trim() || "weighbridge",
-        locationBias: { circle: { center: { latitude, longitude }, radius: radiusMeters } },
-        maxResultCount: 20,
-      }
-    : {
-        includedTypes: [supportedTypes[type as Exclude<ServiceType, "weighbridge">]],
-        locationRestriction: { circle: { center: { latitude, longitude }, radius: radiusMeters } },
-        maxResultCount: 20,
-      };
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Goog-Api-Key": key,
-      "X-Goog-FieldMask": fieldMask,
-    },
-    body: JSON.stringify(body),
-  });
-  if (!response.ok) {
-    const detail = await response.text();
-    console.error("Google Places request failed", response.status, detail.slice(0, 300));
-    throw new Error(response.status === 403 ? "Google Places access was denied." : "Nearby service search is temporarily unavailable.");
-  }
-  const payload = await response.json() as { places?: Record<string, unknown>[] };
-  return (payload.places ?? [])
-    .map((place) => toService(place, type, latitude, longitude))
-    .filter((place): place is NonNullable<typeof place> => place !== null)
-    .sort((left, right) => left.distance_km - right.distance_km);
-}
-
-Deno.serve(async (request) => {
-  if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (request.method !== "POST") return json({ error: "Method not allowed." }, 405);
-
-  const providerKey = Deno.env.get("GOOGLE_PLACES_API_KEY");
-  if (!providerKey) {
-    return json({ error: "Nearby services is not configured. Add GOOGLE_PLACES_API_KEY to Edge Function secrets." }, 503);
-  }
-
-  try {
-    const input = await request.json() as Record<string, unknown>;
-    const latitude = Number(input.latitude);
-    const longitude = Number(input.longitude);
-    const radiusKm = Number(input.radius_km ?? 10);
-    const type = (input.type || "fuel") as ServiceType;
-    const query = typeof input.query === "string" ? input.query.slice(0, 100) : undefined;
-    if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 || !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
-      return json({ error: "A valid current location is required." }, 400);
+import { createClient } from 'npm:@supabase/supabase-js@2.99.2';
+import { categories, googleSearch, osmSearch, type Category, type Place } from './providers.ts';
+const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type','Access-Control-Allow-Methods':'POST, OPTIONS'};
+const json=(body:unknown,status=200)=>Response.json(body,{status,headers:cors});
+// Only OSM results are cached here. Google content is fetched live.
+const cache=new Map<string,{until:number;places:Place[]}>();
+Deno.serve(async request=>{
+  if(request.method==='OPTIONS')return new Response('ok',{headers:cors});
+  if(request.method!=='POST')return json({error:'Method not allowed'},405);
+  const token=request.headers.get('Authorization')?.replace(/^Bearer\s+/i,'');
+  if(!token)return json({error:'Please sign in to find nearby services.'},401);
+  const client=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_ANON_KEY')!,{auth:{persistSession:false}});
+  const {data:{user},error}=await client.auth.getUser(token);
+  if(error||!user)return json({error:'Please sign in again.'},401);
+  try{
+    const input=await request.json();
+    const latitude=input.latitude,longitude=input.longitude,radiusKm=input.radius_km??10;
+    if(typeof latitude!=='number'||!Number.isFinite(latitude)||Math.abs(latitude)>90||typeof longitude!=='number'||!Number.isFinite(longitude)||Math.abs(longitude)>180)return json({error:'A valid current location is required.'},400);
+    if(!Number.isInteger(radiusKm)||radiusKm<1||radiusKm>50)return json({error:'Choose a radius between 1 and 50 km.'},400);
+    const type=input.type as Category|undefined;
+    if(type&&!categories.includes(type))return json({error:'Unknown service category.'},400);
+    const search={latitude,longitude,radiusKm,type,query:typeof input.query==='string'?input.query.trim().slice(0,100):''};
+    const key=Deno.env.get('GOOGLE_PLACES_API_KEY');
+    if(key){
+      try{
+        const services=await googleSearch(search,key);
+        if(services.length)return json({services,provider:'google'});
+      }catch {console.warn('Google Places failed; using OpenStreetMap.');}
     }
-    if (!Number.isInteger(radiusKm) || radiusKm < 1 || radiusKm > 50) {
-      return json({ error: "Choose a search radius between 1 and 50 km." }, 400);
-    }
-    if (!(type in supportedTypes) && type !== "weighbridge") {
-      return json({ error: "Unsupported service type." }, 400);
-    }
-    return json({ services: await googleSearch({ key: providerKey, latitude, longitude, radiusKm, type, query }) });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Nearby service search is temporarily unavailable.";
-    return json({ error: message }, 502);
-  }
+    const cacheKey=JSON.stringify(search);
+    const cached=cache.get(cacheKey);
+    if(cached&&cached.until>Date.now())return json({services:cached.places,provider:'osm'});
+    const services=await osmSearch(search);
+    if(cache.size>100)cache.clear();
+    cache.set(cacheKey,{until:Date.now()+180000,places:services});
+    return json({services,provider:'osm'});
+  }catch{return json({error:'Nearby services could not be loaded. Please try again or expand your search.'},502);}
 });

@@ -8,10 +8,18 @@ class NearbyServicesScreenModel {
     required this.services,
     this.type,
     this.query = '',
+    this.locationLabel = '',
+    this.loadingCategories = const {},
+    this.categoryErrors = const {},
+    this.categoryRadii = const {},
   });
   final DeviceLocation location;
   final int radiusKm;
   final NearbyServiceType? type;
   final String query;
+  final String locationLabel;
   final List<NearbyServiceModel> services;
+  final Set<NearbyServiceType> loadingCategories;
+  final Map<NearbyServiceType, String> categoryErrors;
+  final Map<NearbyServiceType, int> categoryRadii;
 }

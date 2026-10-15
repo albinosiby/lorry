@@ -5,7 +5,12 @@ import '../models/booking_screen_models.dart';
 import '../repositories/booking_repository_interface.dart';
 
 class BookingDetailsCubit extends ResourceCubit<BookingDetailsModel> {
-  BookingDetailsCubit(this.repository, this.locationService);
+  BookingDetailsCubit(
+    this.repository,
+    this.locationService, {
+    this.onTripStarted,
+  });
+  final Future<void> Function()? onTripStarted;
   final IBookingRepository repository;
   final ILocationService locationService;
   Future<bool> callContact(String phone) =>
@@ -17,11 +22,18 @@ class BookingDetailsCubit extends ResourceCubit<BookingDetailsModel> {
     notice: 'Booking updated.',
   );
 
-  Future<bool> reportDeliveryWithCollection(String id, double amount) => act(
-    () =>
-        repository.transition(id, 'delivery_reported', collectedAmount: amount),
-    notice: 'Delivery reported. Freight income was added to Finance.',
-  );
+  Future<bool> reportDeliveryWithCollection(String id, double amount) =>
+      act(() async {
+        await repository.transition(
+          id,
+          'delivery_reported',
+          collectedAmount: amount,
+        );
+        final updated = await repository.get(id);
+        if (!isClosed) {
+          emit(ResourceState(data: BookingDetailsModel(updated), busy: true));
+        }
+      }, notice: 'Delivery reported. Freight income was added to Finance.');
 
   /// Requests GPS access before any booking request is sent. This keeps a
   /// phone permission/service problem distinct from a backend connection error.
@@ -66,7 +78,18 @@ class BookingDetailsCubit extends ResourceCubit<BookingDetailsModel> {
           latitude: location.latitude!,
           longitude: location.longitude!,
         );
+        await onTripStarted?.call();
       }, notice: 'Trip started and your first location was shared.');
+
+  Future<bool> collectItems(String id, DeviceLocation location) => act(
+    () => repository.transition(
+      id,
+      'item_collected',
+      latitude: location.latitude!,
+      longitude: location.longitude!,
+    ),
+    notice: 'Items collected. Your customer has been notified.',
+  );
   Future<bool> acceptCustomerInvitation(String id) => act(
     () => repository.acceptCustomerInvitation(id),
     notice: 'Truck invitation accepted.',

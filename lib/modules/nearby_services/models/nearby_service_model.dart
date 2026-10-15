@@ -6,7 +6,10 @@ enum NearbyServiceType {
   weighbridge('Weighbridge', 'weighbridge'),
   workshop('Workshop', 'workshop'),
   tyre('Tyre work', 'tyre'),
-  hospital('Hospital', 'hospital');
+  hospital('Hospital', 'hospital'),
+  food('Food / dhabas', 'food'),
+  hotel('Hotels / stays', 'hotel'),
+  serviceCenter('Service centres', 'service_center');
 
   const NearbyServiceType(this.label, this.apiValue);
   final String label;
@@ -24,6 +27,11 @@ class NearbyServiceModel extends Equatable {
     this.distanceKm,
     this.rating,
     this.openNow,
+    this.phone = '',
+    this.provider = '',
+    this.openingHours = '',
+    this.truckFriendly = false,
+    this.attributions = const [],
   });
 
   final String id, name, address;
@@ -31,6 +39,9 @@ class NearbyServiceModel extends Equatable {
   final double latitude, longitude;
   final double? distanceKm, rating;
   final bool? openNow;
+  final String phone, provider, openingHours;
+  final bool truckFriendly;
+  final List<Map<String, dynamic>> attributions;
 
   factory NearbyServiceModel.fromJson(Map<String, dynamic> json) {
     final apiType = json['service_type'] ?? json['type'] ?? 'fuel';
@@ -47,6 +58,14 @@ class NearbyServiceModel extends Equatable {
       distanceKm: (json['distance_km'] as num?)?.toDouble(),
       rating: (json['rating'] as num?)?.toDouble(),
       openNow: json['is_open_now'] as bool?,
+      phone: json['phone']?.toString() ?? '',
+      provider: json['provider']?.toString() ?? '',
+      openingHours: json['opening_hours']?.toString() ?? '',
+      truckFriendly: json['truck_friendly'] == true,
+      attributions: (json['attributions'] as List? ?? const [])
+          .whereType<Map>()
+          .map((row) => Map<String, dynamic>.from(row))
+          .toList(),
     );
   }
 
@@ -60,5 +79,10 @@ class NearbyServiceModel extends Equatable {
     distanceKm,
     rating,
     openNow,
+    phone,
+    provider,
+    openingHours,
+    truckFriendly,
+    attributions,
   ];
 }

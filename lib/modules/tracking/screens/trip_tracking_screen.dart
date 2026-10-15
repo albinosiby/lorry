@@ -28,8 +28,6 @@ class TripTrackingScreen extends StatefulWidget {
 
 class _TripTrackingScreenState extends State<TripTrackingScreen> {
   Timer? refreshTimer;
-  Timer? sharingTimer;
-  bool sharing = false;
   BookingModel? booking;
   bool loadingBooking = false;
   final mapController = MapController();
@@ -38,15 +36,15 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
   void initState() {
     super.initState();
     // Auto-update every 2 minutes as requested
-    refreshTimer = Timer.periodic(const Duration(minutes: 2), (_) {
-      if (mounted) context.read<TripTrackingCubit>().load(widget.bookingId);
+    refreshTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      if (mounted) {
+        context.read<TripTrackingCubit>().load(widget.bookingId);
+        _loadBookingDetails();
+      }
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadBookingDetails();
-      final isDriver =
-          context.read<SessionCubit>().state.profile?.role == UserRole.driver;
-      if (isDriver && mounted) _shareNow(start: true);
     });
   }
 
@@ -65,22 +63,9 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
   @override
   void dispose() {
     refreshTimer?.cancel();
-    sharingTimer?.cancel();
+    mapController.dispose();
     super.dispose();
   }
-
-  Future<void> _shareNow({bool start = false}) async {
-    final ok = await context.read<TripTrackingCubit>().shareCurrentLocation(
-      widget.bookingId,
-    );
-    if (!ok || !mounted || !start) return;
-    setState(() => sharing = true);
-    // Background location refresh every 2 minutes for driver
-    sharingTimer ??= Timer.periodic(const Duration(minutes: 2), (_) {
-      if (mounted) _shareNow();
-    });
-  }
-
 
   @override
   Widget build(BuildContext context) {
@@ -99,12 +84,12 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
           final point = location != null
               ? LatLng(location.latitude, location.longitude)
               : (booking?.load.pickupLatitude != null &&
-                      booking?.load.pickupLongitude != null
-                  ? LatLng(
-                      booking!.load.pickupLatitude!,
-                      booking!.load.pickupLongitude!,
-                    )
-                  : const LatLng(10.1632, 76.6413));
+                        booking?.load.pickupLongitude != null
+                    ? LatLng(
+                        booking!.load.pickupLatitude!,
+                        booking!.load.pickupLongitude!,
+                      )
+                    : const LatLng(10.1632, 76.6413));
 
           return Stack(
             children: [
@@ -112,6 +97,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
               Positioned.fill(
                 child: AppConfig.hasMapTiles
                     ? FlutterMap(
+                        key: ValueKey('${point.latitude}:${point.longitude}'),
                         mapController: mapController,
                         options: MapOptions(
                           initialCenter: point,
@@ -226,11 +212,14 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
                           vertical: 10,
                         ),
                         decoration: BoxDecoration(
-                          color: (isDark ? const Color(0xFF12281E) : Colors.white)
-                              .withValues(alpha: 0.94),
+                          color:
+                              (isDark ? const Color(0xFF12281E) : Colors.white)
+                                  .withValues(alpha: 0.94),
                           borderRadius: BorderRadius.circular(24),
                           border: Border.all(
-                            color: const Color(0xFF2E7D32).withValues(alpha: 0.4),
+                            color: const Color(
+                              0xFF2E7D32,
+                            ).withValues(alpha: 0.4),
                             width: 1.5,
                           ),
                           boxShadow: [
@@ -256,8 +245,12 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
                             Expanded(
                               child: Text(
                                 location != null
-                                    ? 'LIVE GPS · AUTO-UPDATES (2 MIN)'
-                                    : 'CONNECTING LIVE SATELLITE...',
+                                    ? (!location.locationEnabled
+                                          ? 'LOCATION OFF · LAST KNOWN POINT'
+                                          : location.stale
+                                          ? 'LOCATION UPDATE OVERDUE'
+                                          : 'GPS UPDATES EVERY 2 MIN')
+                                    : 'WAITING FOR DRIVER LOCATION',
                                 style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w800,
@@ -278,7 +271,9 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
                       icon: Icons.refresh_rounded,
                       busy: state.loading || state.busy,
                       onTap: () {
-                        context.read<TripTrackingCubit>().load(widget.bookingId);
+                        context.read<TripTrackingCubit>().load(
+                          widget.bookingId,
+                        );
                         _loadBookingDetails();
                       },
                     ),
@@ -317,11 +312,11 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: (isDark ? const Color(0xFF13261D) : Colors.white).withValues(alpha: 0.96),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: cs.outlineVariant.withValues(alpha: 0.6),
+        color: (isDark ? const Color(0xFF13261D) : Colors.white).withValues(
+          alpha: 0.96,
         ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.6)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.18),
@@ -379,13 +374,14 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
                   ],
                 ),
               ),
-              const StatusBadge('In transit'),
+              StatusBadge(booking?.status ?? 'accepted'),
             ],
           ),
 
           if (booking != null) ...[
             const SizedBox(height: 12),
             RouteSummary(booking.load.pickup, booking.load.destination),
+            if (booking.itemsCollected) const Text('Item collected'),
           ],
 
           const SizedBox(height: 14),
@@ -423,11 +419,12 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Location auto-updates every 2 minutes while the truck is in motion.',
-              style: TextStyle(
-                fontSize: 11,
-                color: cs.onSurfaceVariant,
-              ),
+              !location.locationEnabled
+                  ? 'Location is off. The map shows the last shared point.'
+                  : location.stale
+                  ? 'No recent update. Showing the last shared point; the driver may be offline.'
+                  : 'GPS updates every 2 minutes during the active trip.',
+              style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
             ),
           ] else ...[
             Row(
@@ -466,16 +463,47 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
               ),
               icon: const Icon(Icons.directions_outlined, size: 20),
               label: const Text(
-                'View Directions to Destination',
+                'View directions',
                 style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
               ),
               onPressed: () {
-                MapNavigationService().openDestination(
-                  destinationLabel: booking.load.destination,
-                  latitude: booking.load.destinationLatitude,
-                  longitude: booking.load.destinationLongitude,
-                );
+                if (booking.itemsCollected) {
+                  MapNavigationService().openDestination(
+                    destinationLabel: booking.load.destination,
+                    latitude: booking.load.destinationLatitude,
+                    longitude: booking.load.destinationLongitude,
+                  );
+                } else {
+                  MapNavigationService().openPickup(
+                    pickupLabel: booking.load.pickup,
+                    latitude: booking.load.pickupLatitude,
+                    longitude: booking.load.pickupLongitude,
+                  );
+                }
               },
+            ),
+          ],
+          if (!isDriver && booking != null) ...[
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              icon: const Icon(Icons.call_outlined),
+              label: const Text('Call driver'),
+              onPressed: booking.otherPhone.isEmpty
+                  ? null
+                  : () async {
+                      try {
+                        await di<IBookingRepository>().callContact(
+                          booking.otherPhone,
+                        );
+                      } catch (_) {
+                        if (context.mounted) {
+                          showNotice(
+                            context,
+                            'Could not open the phone dialler.',
+                          );
+                        }
+                      }
+                    },
             ),
           ],
         ],
@@ -507,13 +535,14 @@ class _FloatingGlassButton extends StatelessWidget {
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: (isDark ? const Color(0xFF12281E) : Colors.white)
-                .withValues(alpha: 0.94),
+            color: (isDark ? const Color(0xFF12281E) : Colors.white).withValues(
+              alpha: 0.94,
+            ),
             shape: BoxShape.circle,
             border: Border.all(
-              color: Theme.of(context).colorScheme.outlineVariant.withValues(
-                    alpha: 0.6,
-                  ),
+              color: Theme.of(
+                context,
+              ).colorScheme.outlineVariant.withValues(alpha: 0.6),
             ),
             boxShadow: [
               BoxShadow(

@@ -67,7 +67,7 @@ class WelcomeScreen extends StatelessWidget {
           AppButton(
             label: 'Get started',
             icon: Icons.arrow_forward_rounded,
-            onPressed: () => context.go('/sign-up'),
+            onPressed: () => context.go('/role-selection'),
           ),
           const SizedBox(height: 12),
           OutlinedButton(

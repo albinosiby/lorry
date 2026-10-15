@@ -12,6 +12,7 @@ class BookingModel extends Equatable {
     this.otherName = '',
     this.otherPhone = '',
     this.deliveryReportedAt,
+    this.itemCollectedAt,
     this.reason,
     this.source = 'driver_request',
     this.events = const [],
@@ -21,8 +22,17 @@ class BookingModel extends Equatable {
   final LoadModel load;
   final DateTime createdAt;
   final DateTime? deliveryReportedAt;
+  final DateTime? itemCollectedAt;
   final List<BookingEvent> events;
-  bool get canStart => status == 'accepted';
+  bool get deliveryPendingConfirmation =>
+      status == 'in_transit' && deliveryReportedAt != null;
+  bool get isLiveTrip => status == 'in_transit' && deliveryReportedAt == null;
+  bool get itemsCollected =>
+      itemCollectedAt != null ||
+      status == 'in_transit' ||
+      status == 'completed';
+  bool get canCollect => status == 'accepted' && !itemsCollected;
+  bool get canStart => status == 'accepted' && itemsCollected;
   bool get canReport => status == 'in_transit' && deliveryReportedAt == null;
   bool get canComplete => status == 'in_transit' && deliveryReportedAt != null;
   bool get canCancel => status == 'requested' || status == 'accepted';
@@ -36,6 +46,7 @@ class BookingModel extends Equatable {
     otherName: j['other_name'] ?? '',
     otherPhone: j['other_phone'] ?? '',
     deliveryReportedAt: DateTime.tryParse(j['delivery_reported_at'] ?? ''),
+    itemCollectedAt: DateTime.tryParse(j['item_collected_at'] ?? ''),
     reason: j['reason'],
     source: j['source'] ?? 'driver_request',
     events: ((j['events'] as List?) ?? [])
@@ -48,6 +59,7 @@ class BookingModel extends Equatable {
     status,
     load,
     deliveryReportedAt,
+    itemCollectedAt,
     reason,
     events,
     source,

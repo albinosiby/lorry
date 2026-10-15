@@ -9,6 +9,7 @@ import 'design_system/design_system.dart';
 import 'modules/auth/cubit/session_cubit.dart';
 import 'modules/auth/models/auth_models.dart';
 import 'utils/services/notification_sync_service.dart';
+import 'utils/services/trip_location_sharing_service.dart';
 
 class LorryLinkApp extends StatefulWidget {
   const LorryLinkApp({super.key});
@@ -49,6 +50,13 @@ class _LorryLinkAppState extends State<LorryLinkApp>
       );
       notificationSubscription = session.stream.listen((state) {
         final profile = state.profile;
+        if (di.isRegistered<TripLocationSharingService>()) {
+          if (state.status == SessionStatus.ready && profile != null) {
+            di<TripLocationSharingService>().start(profile.id);
+          } else {
+            unawaited(di<TripLocationSharingService>().stop());
+          }
+        }
         if (state.status == SessionStatus.ready && profile != null) {
           di<NotificationSyncService>().start(profile.id);
           if (!profile.needsSetup) {
@@ -70,6 +78,9 @@ class _LorryLinkAppState extends State<LorryLinkApp>
     refresh.dispose();
     notificationSubscription?.cancel();
     notificationOpens?.cancel();
+    if (di.isRegistered<TripLocationSharingService>()) {
+      unawaited(di<TripLocationSharingService>().stop());
+    }
     if (di.isRegistered<NotificationSyncService>()) {
       di<NotificationSyncService>().stop();
     }

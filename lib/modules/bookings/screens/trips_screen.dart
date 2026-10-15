@@ -44,10 +44,7 @@ class _TripsScreenState extends State<TripsScreen> {
           builder: (model) {
             final activeTransitTrip = model.bookings
                 .cast<BookingModel?>()
-                .firstWhere(
-                  (b) => b?.status == 'in_transit',
-                  orElse: () => null,
-                );
+                .firstWhere((b) => b?.isLiveTrip ?? false, orElse: () => null);
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -148,12 +145,13 @@ class _TripsScreenState extends State<TripsScreen> {
     BookingModel? activeTransitTrip,
     bool isDark,
   ) {
-    final inTransitCount =
-        model.bookings.where((b) => b.status == 'in_transit').length;
-    final acceptedCount =
-        model.bookings.where((b) => b.status == 'accepted').length;
-    final completedCount =
-        model.bookings.where((b) => b.status == 'completed').length;
+    final inTransitCount = model.bookings.where((b) => b.isLiveTrip).length;
+    final acceptedCount = model.bookings
+        .where((b) => b.status == 'accepted')
+        .length;
+    final completedCount = model.bookings
+        .where((b) => b.status == 'completed')
+        .length;
 
     return Container(
       decoration: BoxDecoration(
@@ -204,7 +202,9 @@ class _TripsScreenState extends State<TripsScreen> {
                           color: const Color(0xFFD5E9A9).withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: const Color(0xFFD5E9A9).withValues(alpha: 0.4),
+                            color: const Color(
+                              0xFFD5E9A9,
+                            ).withValues(alpha: 0.4),
                           ),
                         ),
                         child: Row(
@@ -241,7 +241,9 @@ class _TripsScreenState extends State<TripsScreen> {
                               horizontal: 10,
                               vertical: 4,
                             ),
-                            backgroundColor: Colors.white.withValues(alpha: 0.08),
+                            backgroundColor: Colors.white.withValues(
+                              alpha: 0.08,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -260,7 +262,9 @@ class _TripsScreenState extends State<TripsScreen> {
                   ),
                   const SizedBox(height: 14),
                   Text(
-                    widget.requests ? 'Review Requests' : 'Your Journeys & Loads',
+                    widget.requests
+                        ? 'Review Requests'
+                        : 'Your Journeys & Loads',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
@@ -432,11 +436,7 @@ class _TripsScreenState extends State<TripsScreen> {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 11,
-              color: color ?? const Color(0xFFD5E9A9),
-            ),
+            Icon(icon, size: 11, color: color ?? const Color(0xFFD5E9A9)),
             const SizedBox(width: 4),
             Text(
               label,
@@ -508,8 +508,8 @@ class _TripsScreenState extends State<TripsScreen> {
                   color: isSelected
                       ? const Color(0xFF193F35)
                       : (isDark
-                          ? Colors.white.withValues(alpha: 0.08)
-                          : Colors.black.withValues(alpha: 0.06)),
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : Colors.black.withValues(alpha: 0.06)),
                 ),
               ),
               onSelected: (_) {
@@ -523,17 +523,13 @@ class _TripsScreenState extends State<TripsScreen> {
     );
   }
 
-  Widget _buildTripCard(
-    BuildContext context,
-    BookingModel b,
-    bool isDark,
-  ) {
+  Widget _buildTripCard(BuildContext context, BookingModel b, bool isDark) {
     final cardBg = isDark ? const Color(0xFF1E2421) : Colors.white;
     final borderColor = isDark
         ? Colors.white.withValues(alpha: 0.08)
         : Colors.black.withValues(alpha: 0.07);
 
-    final isInTransit = b.status == 'in_transit';
+    final isInTransit = b.isLiveTrip;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -578,7 +574,9 @@ class _TripsScreenState extends State<TripsScreen> {
                         Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF193F35).withValues(alpha: 0.1),
+                            color: const Color(
+                              0xFF193F35,
+                            ).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Icon(
@@ -641,7 +639,9 @@ class _TripsScreenState extends State<TripsScreen> {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
-                                  color: isDark ? Colors.white70 : Colors.black87,
+                                  color: isDark
+                                      ? Colors.white70
+                                      : Colors.black87,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -658,7 +658,9 @@ class _TripsScreenState extends State<TripsScreen> {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF193F35).withValues(alpha: 0.12),
+                          color: const Color(
+                            0xFF193F35,
+                          ).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -690,9 +692,8 @@ class _TripsScreenState extends State<TripsScreen> {
                             ),
                             elevation: 0,
                           ),
-                          onPressed: () => context.push(
-                            '${Routes.tracking}/${b.id}',
-                          ),
+                          onPressed: () =>
+                              context.push('${Routes.tracking}/${b.id}'),
                           icon: const Icon(Icons.gps_fixed_rounded, size: 15),
                           label: const Text(
                             'Track Live GPS',
@@ -722,10 +723,7 @@ class _TripsScreenState extends State<TripsScreen> {
                           await context.push('/bookings/${b.id}');
                           if (mounted) refresh();
                         },
-                        icon: const Icon(
-                          Icons.article_outlined,
-                          size: 15,
-                        ),
+                        icon: const Icon(Icons.article_outlined, size: 15),
                         label: const Text(
                           'Trip Details',
                           style: TextStyle(
@@ -815,10 +813,7 @@ class _TripsScreenState extends State<TripsScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: AppTheme.orange.withValues(alpha: 0.2),
-                border: Border.all(
-                  color: AppTheme.orange,
-                  width: 3,
-                ),
+                border: Border.all(color: AppTheme.orange, width: 3),
               ),
             ),
             const SizedBox(width: 12),
@@ -862,7 +857,11 @@ class _TripsScreenState extends State<TripsScreen> {
         child: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.report_gmailerrorred_rounded, size: 12, color: Colors.amber),
+            Icon(
+              Icons.report_gmailerrorred_rounded,
+              size: 12,
+              color: Colors.amber,
+            ),
             SizedBox(width: 4),
             Text(
               'DELIVERY REPORTED',
@@ -880,40 +879,40 @@ class _TripsScreenState extends State<TripsScreen> {
 
     final (color, label, icon) = switch (b.status) {
       'in_transit' => (
-          const Color(0xFF00897B),
-          'IN TRANSIT 🚚',
-          Icons.directions_run_rounded
-        ),
+        const Color(0xFF00897B),
+        'IN TRANSIT 🚚',
+        Icons.directions_run_rounded,
+      ),
       'accepted' => (
-          const Color(0xFF2E7D32),
-          'READY / ACCEPTED',
-          Icons.check_circle_outline_rounded
-        ),
+        const Color(0xFF2E7D32),
+        'READY / ACCEPTED',
+        Icons.check_circle_outline_rounded,
+      ),
       'requested' => (
-          const Color(0xFF1976D2),
-          'REQUEST PENDING',
-          Icons.hourglass_top_rounded
-        ),
+        const Color(0xFF1976D2),
+        'REQUEST PENDING',
+        Icons.hourglass_top_rounded,
+      ),
       'completed' => (
-          const Color(0xFF455A64),
-          'COMPLETED 🏁',
-          Icons.task_alt_rounded
-        ),
+        const Color(0xFF455A64),
+        'COMPLETED 🏁',
+        Icons.task_alt_rounded,
+      ),
       'declined' => (
-          const Color(0xFFC62828),
-          'DECLINED',
-          Icons.cancel_outlined
-        ),
+        const Color(0xFFC62828),
+        'DECLINED',
+        Icons.cancel_outlined,
+      ),
       'cancelled' => (
-          const Color(0xFFC62828),
-          'CANCELLED',
-          Icons.cancel_outlined
-        ),
+        const Color(0xFFC62828),
+        'CANCELLED',
+        Icons.cancel_outlined,
+      ),
       _ => (
-          Colors.grey.shade700,
-          statusLabel(b.status).toUpperCase(),
-          Icons.info_outline
-        ),
+        Colors.grey.shade700,
+        statusLabel(b.status).toUpperCase(),
+        Icons.info_outline,
+      ),
     };
 
     return Container(
@@ -966,10 +965,7 @@ class _TripsScreenState extends State<TripsScreen> {
           const SizedBox(height: 18),
           Text(
             widget.requests ? 'No booking requests found' : 'No trips found',
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-            ),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 6),
           Text(

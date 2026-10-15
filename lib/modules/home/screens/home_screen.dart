@@ -106,7 +106,10 @@ class HomeScreen extends StatelessWidget {
                       // 1. Current Ongoing Trip (Driver)
                       if (!shipper && m.ongoingTrips.isNotEmpty) ...[
                         const SizedBox(height: 24),
-                        _buildDriverOngoingTripsSection(context, m.ongoingTrips),
+                        _buildDriverOngoingTripsSection(
+                          context,
+                          m.ongoingTrips,
+                        ),
                       ],
 
                       // 2. Urgent: Accepted Trips (Driver)
@@ -118,7 +121,10 @@ class HomeScreen extends StatelessWidget {
                       // 3. Live Shipment In Transit (Customer / Shipper)
                       if (shipper && m.ongoingTrips.isNotEmpty) ...[
                         const SizedBox(height: 24),
-                        _buildCustomerLiveTransitSection(context, m.ongoingTrips),
+                        _buildCustomerLiveTransitSection(
+                          context,
+                          m.ongoingTrips,
+                        ),
                       ],
 
                       // 4. Urgent: Pending Requests Banner
@@ -959,7 +965,10 @@ class HomeScreen extends StatelessWidget {
               ),
               if (priceValue != null && priceValue > 0) ...[
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF2E7D32).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
@@ -975,64 +984,78 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
               ],
-              const StatusBadge('In transit'),
+              StatusBadge(
+                trip.deliveryPendingConfirmation
+                    ? 'Delivery reported'
+                    : 'In transit',
+              ),
             ],
           ),
           const SizedBox(height: 14),
           RouteSummary(trip.load.pickup, trip.load.destination),
           const SizedBox(height: 16),
 
-          // Action Buttons: View Directions & Report Delivery
-          Row(
-            children: [
-              // 1. View Directions (Google Maps to Destination)
-              Expanded(
-                child: FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF1565C0),
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(0, 48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+          if (trip.deliveryPendingConfirmation) ...[
+            const Text(
+              'Delivery reported. Income recorded. Awaiting customer confirmation.',
+            ),
+            TextButton.icon(
+              onPressed: () => context.push('/bookings/${trip.id}'),
+              icon: const Icon(Icons.receipt_long_outlined),
+              label: const Text('View delivery details'),
+            ),
+          ] else
+            Row(
+              children: [
+                // 1. View Directions (Google Maps to Destination)
+                Expanded(
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF1565C0),
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(0, 48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
-                  ),
-                  icon: const Icon(Icons.directions_outlined, size: 20),
-                  label: const Text(
-                    'View Directions',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 13,
+                    icon: const Icon(Icons.directions_outlined, size: 20),
+                    label: const Text(
+                      'View Directions',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                      ),
                     ),
+                    onPressed: () =>
+                        _openDestinationInGoogleMaps(context, trip),
                   ),
-                  onPressed: () => _openDestinationInGoogleMaps(context, trip),
                 ),
-              ),
-              const SizedBox(width: 10),
+                const SizedBox(width: 10),
 
-              // 2. Report Delivery (Opens Delivery Summary to record amount)
-              Expanded(
-                child: FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32),
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(0, 48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                // 2. Report Delivery (Opens Delivery Summary to record amount)
+                Expanded(
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF2E7D32),
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(0, 48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
-                  ),
-                  icon: const Icon(Icons.task_alt_rounded, size: 20),
-                  label: const Text(
-                    'Report Delivery',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 13,
+                    icon: const Icon(Icons.task_alt_rounded, size: 20),
+                    label: const Text(
+                      'Report Delivery',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                      ),
                     ),
+                    onPressed: () => _showDeliverySummaryDialog(context, trip),
                   ),
-                  onPressed: () => _showDeliverySummaryDialog(context, trip),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
         ],
       ),
     );
@@ -1138,7 +1161,11 @@ class HomeScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              const StatusBadge('In transit'),
+              StatusBadge(
+                trip.deliveryPendingConfirmation
+                    ? 'Delivery reported'
+                    : 'In transit',
+              ),
             ],
           ),
           const SizedBox(height: 14),
@@ -1154,11 +1181,17 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             icon: const Icon(Icons.location_searching_rounded, size: 20),
-            label: const Text(
-              'Track Load Location',
+            label: Text(
+              trip.deliveryPendingConfirmation
+                  ? 'Confirm delivery in booking details'
+                  : 'Track Load Location',
               style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
             ),
-            onPressed: () => context.push('${Routes.tracking}/${trip.id}'),
+            onPressed: () => context.push(
+              trip.deliveryPendingConfirmation
+                  ? '/bookings/${trip.id}'
+                  : '${Routes.tracking}/${trip.id}',
+            ),
           ),
         ],
       ),
@@ -1279,11 +1312,24 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             icon: const Icon(Icons.play_arrow_rounded, size: 22),
-            label: const Text(
-              'Start Trip & Broadcast GPS',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+            label: Text(
+              trip.canCollect ? 'Item collected' : 'Start trip',
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
             ),
-            onPressed: () => _startAcceptedTrip(context, trip.id),
+            onPressed: () => trip.canCollect
+                ? _collectItems(context, trip.id)
+                : _startAcceptedTrip(context, trip.id),
+          ),
+          TextButton.icon(
+            onPressed: () => trip.itemsCollected
+                ? _openDestinationInGoogleMaps(context, trip)
+                : _openPickupInGoogleMaps(context, trip.load),
+            icon: const Icon(Icons.directions_outlined),
+            label: Text(
+              trip.itemsCollected
+                  ? 'Navigate to destination'
+                  : 'Navigate to pickup',
+            ),
           ),
         ],
       ),
@@ -1543,6 +1589,22 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  Future<void> _collectItems(BuildContext context, String id) async {
+    final cubit = context.read<BookingDetailsCubit>();
+    final location = await cubit.requestLocationForTrip();
+    if (location == null || !context.mounted) return;
+    if (!await confirmAction(
+      context,
+      'Items collected?',
+      'Confirm you have picked up the goods. Your customer will be notified.',
+    )) {
+      return;
+    }
+    if (await cubit.collectItems(id, location) && context.mounted) {
+      await context.read<HomeCubit>().load(includeDriverTools: true);
+    }
+  }
+
   Future<void> _openPickupInGoogleMaps(
     BuildContext context,
     LoadModel load,
@@ -1590,7 +1652,8 @@ class HomeScreen extends StatelessWidget {
         .read<BookingDetailsCubit>()
         .reportDeliveryWithCollection(trip.id, collected);
     if (ok && context.mounted) {
-      context.read<HomeCubit>().load(includeDriverTools: true);
+      await context.read<HomeCubit>().load(includeDriverTools: true);
+      if (!context.mounted) return;
       showNotice(
         context,
         'Delivery reported! ₹${collected.toStringAsFixed(0)} added to Finance tracker.',
@@ -1600,10 +1663,7 @@ class HomeScreen extends StatelessWidget {
 }
 
 class _DeliverySummarySheet extends StatefulWidget {
-  const _DeliverySummarySheet({
-    required this.trip,
-    this.defaultAmount,
-  });
+  const _DeliverySummarySheet({required this.trip, this.defaultAmount});
 
   final BookingModel trip;
   final double? defaultAmount;
@@ -1746,7 +1806,8 @@ class _DeliverySummarySheetState extends State<_DeliverySummarySheet> {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      if (widget.defaultAmount != null && widget.defaultAmount! > 0)
+                      if (widget.defaultAmount != null &&
+                          widget.defaultAmount! > 0)
                         Text(
                           'Agreed: ₹${widget.defaultAmount!.toStringAsFixed(0)}',
                           style: const TextStyle(
@@ -1768,7 +1829,9 @@ class _DeliverySummarySheetState extends State<_DeliverySummarySheet> {
               label: 'Amount Collected (₹) *',
               hint: 'Enter freight money collected',
               prefixText: '₹ ',
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               validator: (v) {
                 final a = double.tryParse(v?.trim() ?? '');
                 return a == null || a <= 0
@@ -1804,7 +1867,9 @@ class _DeliverySummarySheetState extends State<_DeliverySummarySheet> {
               ),
               onPressed: () {
                 if (!form.currentState!.validate()) return;
-                final collectedAmount = double.parse(amountController.text.trim());
+                final collectedAmount = double.parse(
+                  amountController.text.trim(),
+                );
                 Navigator.pop(context, collectedAmount);
               },
             ),

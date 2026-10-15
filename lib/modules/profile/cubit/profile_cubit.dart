@@ -24,6 +24,7 @@ class ProfileCubit extends ResourceCubit<ProfileScreenModel> {
     String? address,
     String? companyName,
     String? photoPath,
+    String? gender,
   }) => act(() async {
     await repository.save(
       name: name,
@@ -32,6 +33,7 @@ class ProfileCubit extends ResourceCubit<ProfileScreenModel> {
       address: address,
       companyName: companyName,
       photoPath: photoPath,
+      gender: gender,
     );
   }, notice: 'Profile saved.');
   Future<bool> signOut() => act(auth.signOut);

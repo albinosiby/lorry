@@ -10,6 +10,7 @@ import '../../modules/auth/cubit/auth_form_cubit.dart';
 import '../../modules/auth/models/auth_models.dart';
 import '../../modules/auth/screens/auth_screen.dart';
 import '../../modules/auth/screens/welcome_screen.dart';
+import '../../modules/auth/screens/role_selection_screen.dart';
 import '../../modules/profile/models/profile_model.dart';
 import '../../modules/profile/cubit/profile_cubit.dart';
 import '../../modules/profile/screens/profile_screen.dart';
@@ -63,6 +64,7 @@ String? sessionRedirect(SessionModel session, Uri uri) {
   final path = uri.path;
   const publicPaths = [
     '/welcome',
+    '/role-selection',
     '/sign-in',
     '/sign-up',
     '/forgot-password',
@@ -189,6 +191,10 @@ GoRouter createRouter(SessionCubit session, RouterRefresh refresh) => GoRouter(
       path: Routes.welcome,
       builder: (context, state) => const WelcomeScreen(),
     ),
+    GoRoute(
+      path: Routes.roleSelection,
+      builder: (context, state) => const RoleSelectionScreen(),
+    ),
     for (final entry in {
       Routes.signIn: AuthScreenMode.signIn,
       Routes.signUp: AuthScreenMode.signUp,
@@ -197,17 +203,27 @@ GoRouter createRouter(SessionCubit session, RouterRefresh refresh) => GoRouter(
     }.entries)
       GoRoute(
         path: entry.key,
-        builder: (context, state) => BlocProvider(
-          create: (_) => di<AuthFormCubit>(),
-          child: AuthScreen(mode: entry.value),
-        ),
+        builder: (context, state) {
+          final roleParam = state.uri.queryParameters['role'];
+          UserRole? initialRole;
+          if (roleParam == 'driver') {
+            initialRole = UserRole.driver;
+          } else if (roleParam == 'shipper') {
+            initialRole = UserRole.shipper;
+          }
+          return BlocProvider(
+            create: (_) => di<AuthFormCubit>(),
+            child: AuthScreen(mode: entry.value, initialRole: initialRole),
+          );
+        },
       ),
     GoRoute(
       path: Routes.setup,
       builder: (context, state) => MultiBlocProvider(
         providers: [
           BlocProvider(create: (_) => di<ProfileCubit>()..load()),
-          BlocProvider(create: (_) => di<ProfileDocumentsCubit>()),
+          BlocProvider(create: (_) => di<ProfileDocumentsCubit>()..load()),
+          BlocProvider(create: (_) => di<DriverDocumentsCubit>()..load()),
         ],
         child: const ProfileScreen(setup: true),
       ),

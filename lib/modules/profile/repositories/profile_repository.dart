@@ -49,21 +49,26 @@ class ProfileRepository implements IProfileRepository {
     String? address,
     String? companyName,
     String? photoPath,
+    String? gender,
   }) async {
     final saved = await service.call('profile.save', {
       'name': name.trim(),
       'phone': phone.trim(),
       'role': role?.name,
     });
+    final effectiveCompany = companyName?.trim() ??
+        (gender != null && gender.trim().isNotEmpty ? 'Gender: ${gender.trim()}' : null);
     final details = await service.callNext('profile.details.save', {
       'phone': phone.trim(),
       'address': address?.trim(),
-      'company_name': companyName?.trim(),
+      'company_name': effectiveCompany,
       'photo_path': photoPath?.trim(),
+      if (gender != null && gender.trim().isNotEmpty) 'gender': gender.trim(),
     });
     return ProfileModel.fromJson({
       ...Map<String, dynamic>.from(saved),
       ...Map<String, dynamic>.from(details),
+      if (gender != null && gender.trim().isNotEmpty) 'gender': gender.trim(),
     });
   }
 }

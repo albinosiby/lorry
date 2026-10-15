@@ -22,6 +22,14 @@ class BookingDetailsScreen extends StatelessWidget {
     String title,
     String message,
   ) async {
+    if (status == 'item_collected') {
+      final cubit = context.read<BookingDetailsCubit>();
+      final location = await cubit.requestLocationForTrip();
+      if (location == null || !context.mounted) return;
+      if (!await confirmAction(context, title, message)) return;
+      if (await cubit.collectItems(id, location)) await cubit.load(id);
+      return;
+    }
     if (!await confirmAction(context, title, message)) return;
     if (!context.mounted) return;
     final cubit = context.read<BookingDetailsCubit>();
@@ -186,6 +194,11 @@ class _BookingContent extends StatelessWidget {
         _subtitle,
       ),
       const SizedBox(height: 16),
+      if (booking.itemsCollected)
+        const ListTile(
+          leading: Icon(Icons.inventory_2_outlined),
+          title: Text('Item collected'),
+        ),
       _StatusHero(booking: booking, isCustomer: isCustomer),
       const SizedBox(height: 16),
       _NextStepCard(
@@ -771,9 +784,10 @@ class _NextStepCard extends StatelessWidget {
     'accepted' => Icons.local_shipping_outlined,
     'in_transit' => Icons.location_searching_outlined,
     'completed' => Icons.verified_outlined,
-    'cancelled' || 'declined' => booking.load.status == 'open' && !isCustomer
-        ? Icons.replay_outlined
-        : Icons.cancel_outlined,
+    'cancelled' || 'declined' =>
+      booking.load.status == 'open' && !isCustomer
+          ? Icons.replay_outlined
+          : Icons.cancel_outlined,
     _ => Icons.info_outline,
   };
 
@@ -787,6 +801,9 @@ class _NextStepCard extends StatelessWidget {
       return 'Accept this invitation to take the customer’s load.';
     }
     if (booking.status == 'accepted' && !isCustomer) {
+      if (booking.canCollect) {
+        return 'Go to the pickup point, then confirm Item collected before starting the trip.';
+      }
       return 'When the truck is ready, start the trip and share your live location.';
     }
     if (booking.status == 'accepted') {
@@ -814,6 +831,15 @@ class _NextStepCard extends StatelessWidget {
   }
 
   List<Widget> _actions(BuildContext context) {
+    if (isCustomer && booking.status == 'accepted') {
+      return [
+        OutlinedButton.icon(
+          onPressed: onTrack,
+          icon: const Icon(Icons.location_searching_outlined),
+          label: const Text('Track truck location'),
+        ),
+      ];
+    }
     if (isCustomer && booking.status == 'requested') {
       return [
         AppButton(
@@ -851,6 +877,19 @@ class _NextStepCard extends StatelessWidget {
         ),
       ];
     }
+    if (!isCustomer && booking.canCollect) {
+      return [
+        AppButton(
+          label: 'Item collected',
+          busy: busy,
+          onPressed: () => onChange(
+            'item_collected',
+            'Items collected?',
+            'Confirm the goods have been picked up. The customer will be notified.',
+          ),
+        ),
+      ];
+    }
     if (!isCustomer && booking.canStart) {
       return [
         AppButton(
@@ -863,13 +902,14 @@ class _NextStepCard extends StatelessWidget {
     }
     if (booking.status == 'in_transit') {
       return [
-        OutlinedButton.icon(
-          onPressed: onTrack,
-          icon: const Icon(Icons.location_searching_outlined),
-          label: Text(
-            isCustomer ? 'Track truck location' : 'Share trip location',
+        if (booking.isLiveTrip)
+          OutlinedButton.icon(
+            onPressed: onTrack,
+            icon: const Icon(Icons.location_searching_outlined),
+            label: Text(
+              isCustomer ? 'Track truck location' : 'Share trip location',
+            ),
           ),
-        ),
         if (!isCustomer && booking.canReport) ...[
           const SizedBox(height: 10),
           AppButton(

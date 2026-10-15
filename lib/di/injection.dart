@@ -2,8 +2,10 @@ import 'package:get_it/get_it.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../utils/services/supabase_service.dart';
 import '../utils/services/location_service.dart';
+import '../utils/services/location_label_service.dart';
 import '../utils/services/place_search_service.dart';
 import '../utils/services/notification_sync_service.dart';
+import '../utils/services/trip_location_sharing_service.dart';
 import '../modules/auth/repositories/auth_repository.dart';
 import '../modules/auth/repositories/auth_repository_interface.dart';
 import '../modules/auth/cubit/auth_form_cubit.dart';
@@ -90,6 +92,9 @@ void configureDependencies(SupabaseClient client) {
     () => TripTrackingRepository(di()),
   );
   configureCubits();
+  di.registerLazySingleton(
+    () => TripLocationSharingService(di(), di(), di(), di()),
+  );
 }
 
 void configureCubits() {
@@ -100,10 +105,22 @@ void configureCubits() {
   di.registerFactory(() => LoadDetailsCubit(di(), di()));
   di.registerFactory(() => LoadFormCubit(di(), di()));
   di.registerFactory(() => TripsCubit(di()));
-  di.registerFactory(() => BookingDetailsCubit(di(), di()));
+  di.registerFactory(
+    () => BookingDetailsCubit(
+      di(),
+      di(),
+      onTripStarted: () => di<TripLocationSharingService>().sync(),
+    ),
+  );
   di.registerFactory(() => HomeCubit(di(), di(), di()));
   di.registerFactory(() => NotificationsCubit(di()));
-  di.registerFactory(() => NearbyServicesCubit(di(), di()));
+  di.registerFactory(
+    () => NearbyServicesCubit(
+      di(),
+      di(),
+      resolveLocationLabel: LocationLabelService().describe,
+    ),
+  );
   di.registerFactory(() => VehiclesCubit(di()));
   di.registerFactory(() => DriverDocumentsCubit(di(), di()));
   di.registerFactory(() => AvailabilityCubit(di(), di(), di()));

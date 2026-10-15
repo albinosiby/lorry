@@ -1,5 +1,6 @@
 abstract final class Routes {
   static const welcome = '/welcome',
+      roleSelection = '/role-selection',
       signIn = '/sign-in',
       signUp = '/sign-up',
       forgot = '/forgot-password',

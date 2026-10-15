@@ -109,6 +109,7 @@ class FakeProfile implements IProfileRepository {
     String? address,
     String? companyName,
     String? photoPath,
+    String? gender,
   }) async {
     auth.current = ProfileModel(
       id: auth.current?.id ?? shipper.id,
@@ -118,6 +119,7 @@ class FakeProfile implements IProfileRepository {
       address: address,
       companyName: companyName,
       photoPath: photoPath,
+      gender: gender,
     );
     return auth.current!;
   }
@@ -167,6 +169,7 @@ class FakeBookings implements IBookingRepository {
   double? collectedAmount;
   String status = 'requested';
   bool reported = false;
+  bool itemsCollected = false;
   final actions = <String>[];
   BookingModel get booking => BookingModel(
     id: '20000000-0000-4000-8000-000000000001',
@@ -177,6 +180,7 @@ class FakeBookings implements IBookingRepository {
     driverName: driver.name,
     otherName: shipper.name,
     deliveryReportedAt: reported ? DateTime(2026, 10, 13) : null,
+    itemCollectedAt: itemsCollected ? DateTime(2026, 10, 15) : null,
     events: [BookingEvent('requested', DateTime(2026, 10, 12), '')],
   );
   @override
@@ -201,7 +205,9 @@ class FakeBookings implements IBookingRepository {
   }) async {
     actions.add(status);
     this.collectedAmount = collectedAmount;
-    if (status == 'delivery_reported') {
+    if (status == 'item_collected') {
+      itemsCollected = true;
+    } else if (status == 'delivery_reported') {
       reported = true;
     } else {
       this.status = status;
