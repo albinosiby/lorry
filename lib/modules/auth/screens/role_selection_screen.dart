@@ -1,3 +1,4 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lorry_link/design_system/design_system.dart';
@@ -76,9 +77,12 @@ class RoleSelectionScreen extends StatelessWidget {
                       color: isDark ? Colors.white70 : Colors.black87,
                     ),
                     children: [
-                      const TextSpan(text: 'Already have an account? '),
                       TextSpan(
-                        text: 'Sign in',
+                        text:
+                            '${localize(context, 'Already have an account? ')} ',
+                      ),
+                      TextSpan(
+                        text: localize(context, 'Sign in'),
                         style: TextStyle(
                           color: theme.colorScheme.primary,
                           fontWeight: FontWeight.w700,
@@ -169,7 +173,7 @@ class _RoleCard extends StatelessWidget {
                             color: accentColor.withValues(alpha: .15),
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: Text(
+                          child: LocalizedText(
                             tag,
                             style: TextStyle(
                               color: accentColor,
@@ -180,7 +184,7 @@ class _RoleCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 6),
-                        Text(
+                        LocalizedText(
                           title,
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w800,
@@ -199,7 +203,7 @@ class _RoleCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              Text(
+              LocalizedText(
                 description,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: isDark ? Colors.white70 : Colors.black87,
@@ -222,7 +226,7 @@ class _RoleCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Text(
+                        child: LocalizedText(
                           feature,
                           style: TextStyle(
                             fontSize: 12.5,

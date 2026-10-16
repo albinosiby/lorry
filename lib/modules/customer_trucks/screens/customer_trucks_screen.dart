@@ -1,3 +1,4 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -210,14 +211,14 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      LocalizedText(
                         'Invite ${truck.driverName}',
                         style: Theme.of(sheet).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                      Text(
-                        '${truck.vehicleType} · ${truck.registrationLabel}',
+                      LocalizedText(
+                        '${localize(context, truck.vehicleType)} · ${truck.registrationLabel}',
                         style: Theme.of(sheet).textTheme.bodySmall?.copyWith(
                           color: Theme.of(sheet).colorScheme.onSurfaceVariant,
                         ),
@@ -228,7 +229,7 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            Text(
+            LocalizedText(
               'SELECT AN OPEN SHIPMENT',
               style: Theme.of(sheet).textTheme.labelSmall?.copyWith(
                 fontWeight: FontWeight.w800,
@@ -244,7 +245,8 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
               child: ListView.separated(
                 shrinkWrap: true,
                 itemCount: loads.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 10),
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 10),
                 itemBuilder: (context, index) {
                   final load = loads[index];
                   return Container(
@@ -252,7 +254,9 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
                       color: Theme.of(sheet).colorScheme.surface,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: Theme.of(sheet).colorScheme.outlineVariant.withValues(alpha: 0.7),
+                        color: Theme.of(
+                          sheet,
+                        ).colorScheme.outlineVariant.withValues(alpha: 0.7),
                       ),
                     ),
                     child: ListTile(
@@ -276,15 +280,15 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
                           size: 20,
                         ),
                       ),
-                      title: Text(
+                      title: LocalizedText(
                         '${load.pickupLabel} → ${load.destinationLabel}',
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
                         ),
                       ),
-                      subtitle: Text(
-                        '${load.weightLabel} · ${load.cargo} · ${load.priceLabel}',
+                      subtitle: LocalizedText(
+                        '${localize(context, load.weightLabel)} · ${load.cargo} · ${load.priceLabel}',
                         style: TextStyle(
                           fontSize: 12,
                           color: Theme.of(sheet).colorScheme.onSurfaceVariant,
@@ -325,7 +329,7 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
+                    LocalizedText(
                       'Filter Available Trucks',
                       style: Theme.of(sheet).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w800,
@@ -337,12 +341,12 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
                           _clearFilters(model);
                           Navigator.pop(sheet);
                         },
-                        child: const Text('Reset all'),
+                        child: const LocalizedText('Reset all'),
                       ),
                   ],
                 ),
                 const SizedBox(height: 18),
-                Text(
+                LocalizedText(
                   'SEARCH RADIUS',
                   style: Theme.of(sheet).textTheme.labelSmall?.copyWith(
                     fontWeight: FontWeight.w800,
@@ -355,7 +359,7 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
                   children: [25, 50, 100, 250].map((r) {
                     final isSel = radiusKm == r;
                     return ChoiceChip(
-                      label: Text('$r km'),
+                      label: LocalizedText('$r km'),
                       selected: isSel,
                       onSelected: (val) {
                         if (val) {
@@ -367,7 +371,7 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
                   }).toList(),
                 ),
                 const SizedBox(height: 18),
-                Text(
+                LocalizedText(
                   'MINIMUM PAYLOAD CAPACITY',
                   style: Theme.of(sheet).textTheme.labelSmall?.copyWith(
                     fontWeight: FontWeight.w800,
@@ -377,26 +381,27 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
-                  children: [
-                    (null, 'Any'),
-                    (2.0, '2+ tonnes'),
-                    (5.0, '5+ tonnes'),
-                    (10.0, '10+ tonnes'),
-                    (20.0, '20+ tonnes'),
-                  ].map((pair) {
-                    final isSel = minimumTonnes == pair.$1;
-                    return ChoiceChip(
-                      label: Text(pair.$2),
-                      selected: isSel,
-                      onSelected: (val) {
-                        setState(() => minimumTonnes = pair.$1);
-                        setSheetState(() {});
-                      },
-                    );
-                  }).toList(),
+                  children:
+                      [
+                        (null, 'Any'),
+                        (2.0, '2+ tonnes'),
+                        (5.0, '5+ tonnes'),
+                        (10.0, '10+ tonnes'),
+                        (20.0, '20+ tonnes'),
+                      ].map((pair) {
+                        final isSel = minimumTonnes == pair.$1;
+                        return ChoiceChip(
+                          label: LocalizedText(pair.$2),
+                          selected: isSel,
+                          onSelected: (val) {
+                            setState(() => minimumTonnes = pair.$1);
+                            setSheetState(() {});
+                          },
+                        );
+                      }).toList(),
                 ),
                 const SizedBox(height: 18),
-                Text(
+                LocalizedText(
                   'SORT RESULTS BY',
                   style: Theme.of(sheet).textTheme.labelSmall?.copyWith(
                     fontWeight: FontWeight.w800,
@@ -406,23 +411,24 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
-                  children: [
-                    ('nearest', 'Nearest distance'),
-                    ('capacity_high', 'Highest capacity'),
-                    ('capacity_low', 'Lowest capacity'),
-                  ].map((pair) {
-                    final isSel = sort == pair.$1;
-                    return ChoiceChip(
-                      label: Text(pair.$2),
-                      selected: isSel,
-                      onSelected: (val) {
-                        if (val) {
-                          setState(() => sort = pair.$1);
-                          setSheetState(() {});
-                        }
-                      },
-                    );
-                  }).toList(),
+                  children:
+                      [
+                        ('nearest', 'Nearest distance'),
+                        ('capacity_high', 'Highest capacity'),
+                        ('capacity_low', 'Lowest capacity'),
+                      ].map((pair) {
+                        final isSel = sort == pair.$1;
+                        return ChoiceChip(
+                          label: LocalizedText(pair.$2),
+                          selected: isSel,
+                          onSelected: (val) {
+                            if (val) {
+                              setState(() => sort = pair.$1);
+                              setSheetState(() {});
+                            }
+                          },
+                        );
+                      }).toList(),
                 ),
                 const SizedBox(height: 24),
                 AppButton(
@@ -444,15 +450,14 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: const Text('Available Trucks'),
+      title: const LocalizedText('Available Trucks'),
       actions: [
         if (_hasActiveFilters)
           IconButton(
-            tooltip: 'Clear filters',
+            tooltip: localize(context, 'Clear filters'),
             icon: const Icon(Icons.filter_alt_off_outlined),
-            onPressed: () => _clearFilters(
-              context.read<CustomerTrucksCubit>().state.data,
-            ),
+            onPressed: () =>
+                _clearFilters(context.read<CustomerTrucksCubit>().state.data),
           ),
       ],
     ),
@@ -491,23 +496,25 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          LocalizedText(
                             model.trucks.isEmpty
                                 ? 'No trucks online'
-                                : '${model.trucks.length} ${model.trucks.length == 1 ? 'truck' : 'trucks'} ready for dispatch',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
+                                : '${model.trucks.length} ${localize(context, model.trucks.length == 1 ? 'truck' : 'trucks')} ready for dispatch',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w800),
                           ),
-                          Text(
+                          LocalizedText(
                             selectedLoad != null
                                 ? 'Filtered for: ${selectedLoad.pickupLabel} → ${selectedLoad.destinationLabel}'
                                 : (latitude != null
-                                    ? 'Within ${radiusKm.toInt()} km of your GPS location'
-                                    : 'Across all regions'),
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
+                                      ? 'Within ${radiusKm.toInt()} km of your GPS location'
+                                      : 'Across all regions'),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                           ),
                         ],
                       ),
@@ -518,7 +525,7 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
                       ),
                       onPressed: () => _openFilterSheet(model),
                       icon: const Icon(Icons.tune_rounded, size: 16),
-                      label: const Text('Filters'),
+                      label: const LocalizedText('Filters'),
                     ),
                   ],
                 ),
@@ -572,11 +579,7 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF13362D),
-            Color(0xFF1B4337),
-            Color(0xFF265A4B),
-          ],
+          colors: [Color(0xFF13362D), Color(0xFF1B4337), Color(0xFF265A4B)],
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
@@ -619,7 +622,10 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
             children: [
               // Eyebrow badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFD5E9A9).withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(16),
@@ -639,13 +645,15 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    const Text(
-                      'LIVE FLEET RADAR',
-                      style: TextStyle(
-                        color: Color(0xFFD5E9A9),
-                        fontSize: 10,
-                        letterSpacing: 1.2,
-                        fontWeight: FontWeight.w800,
+                    Flexible(
+                      child: const LocalizedText(
+                        'LIVE FLEET RADAR',
+                        style: TextStyle(
+                          color: Color(0xFFD5E9A9),
+                          fontSize: 10,
+                          letterSpacing: 1.2,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
                   ],
@@ -653,7 +661,7 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
               ),
               const SizedBox(height: 12),
 
-              const Text(
+              const LocalizedText(
                 'Instant Truck Discovery',
                 style: TextStyle(
                   color: Colors.white,
@@ -663,7 +671,7 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
+              const LocalizedText(
                 'Connect directly with verified transport operators who have posted availability near your pickup.',
                 style: TextStyle(
                   color: Color(0xFFD1E4DA),
@@ -675,7 +683,10 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
 
               // Telemetry stats row
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(14),
@@ -736,7 +747,7 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
                           size: 19,
                           color: const Color(0xFF13362D),
                         ),
-                  label: Text(
+                  label: LocalizedText(
                     _isNearMeActive
                         ? 'Trucks Near Me Active (GPS · ${radiusKm.toInt()} km)'
                         : 'Trucks Available Near Me',
@@ -774,27 +785,29 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
       children: [
         Icon(icon, color: const Color(0xFFD5E9A9), size: 16),
         const SizedBox(width: 7),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 13,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                ),
               ),
-            ),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Color(0xFFB4C8BF),
-                fontSize: 9.5,
-                fontWeight: FontWeight.w500,
+              LocalizedText(
+                label,
+                style: const TextStyle(
+                  color: Color(0xFFB4C8BF),
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     ),
@@ -815,7 +828,9 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.7),
+              color: Theme.of(
+                context,
+              ).colorScheme.outlineVariant.withValues(alpha: 0.7),
             ),
             boxShadow: [
               BoxShadow(
@@ -838,11 +853,14 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
                   controller: query,
                   textCapitalization: TextCapitalization.words,
                   onSubmitted: (_) => _search(model),
-                  decoration: const InputDecoration(
-                    hintText: 'Search by driver, truck number, or city...',
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(vertical: 14),
+                  decoration: localizedDecoration(
+                    context,
+                    InputDecoration(
+                      hintText: 'Search by driver, truck number, or city...',
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(vertical: 14),
+                    ),
                   ),
                 ),
               ),
@@ -855,7 +873,7 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
                   },
                 ),
               IconButton(
-                tooltip: 'Search',
+                tooltip: localize(context, 'Search'),
                 icon: const Icon(Icons.arrow_forward_rounded),
                 onPressed: () => _search(model),
               ),
@@ -875,7 +893,9 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
                   color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.6),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outlineVariant.withValues(alpha: 0.6),
                   ),
                 ),
                 child: DropdownButtonHideUnderline(
@@ -891,7 +911,7 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
                         ),
                         const SizedBox(width: 8),
                         const Flexible(
-                          child: Text(
+                          child: LocalizedText(
                             'Match with open load',
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(fontSize: 12),
@@ -902,7 +922,7 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
                     items: [
                       const DropdownMenuItem<String?>(
                         value: null,
-                        child: Text(
+                        child: LocalizedText(
                           'All open loads (no filter)',
                           style: TextStyle(fontSize: 12),
                         ),
@@ -910,7 +930,7 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
                       ...model.openLoads.map(
                         (l) => DropdownMenuItem<String?>(
                           value: l.id,
-                          child: Text(
+                          child: LocalizedText(
                             '${l.pickupLabel} → ${l.destinationLabel}',
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -933,47 +953,57 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
 
             // Location anchor button
             Tooltip(
-              message: _isNearMeActive
-                  ? 'Click to show all regions'
-                  : 'Filter trucks near your GPS location',
+              message: localize(
+                context,
+                _isNearMeActive
+                    ? 'Click to show all regions'
+                    : 'Filter trucks near your GPS location',
+              ),
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                backgroundColor: _isNearMeActive
-                    ? Theme.of(context).colorScheme.primaryContainer
-                    : Theme.of(context).colorScheme.surface,
-                foregroundColor: _isNearMeActive
-                    ? Theme.of(context).colorScheme.onPrimaryContainer
-                    : Theme.of(context).colorScheme.onSurface,
-                side: BorderSide(
-                  color: _isNearMeActive
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.6),
+                  backgroundColor: _isNearMeActive
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : Theme.of(context).colorScheme.surface,
+                  foregroundColor: _isNearMeActive
+                      ? Theme.of(context).colorScheme.onPrimaryContainer
+                      : Theme.of(context).colorScheme.onSurface,
+                  side: BorderSide(
+                    color: _isNearMeActive
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(
+                            context,
+                          ).colorScheme.outlineVariant.withValues(alpha: 0.6),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                icon: _locating
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(
+                        _isNearMeActive
+                            ? Icons.my_location
+                            : Icons.near_me_outlined,
+                        size: 17,
+                      ),
+                label: LocalizedText(
+                  _isNearMeActive ? 'Near Me' : 'Near Me',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
+                onPressed: _locating ? null : () => _findNearMe(model),
               ),
-              icon: _locating
-                  ? const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Icon(
-                      _isNearMeActive ? Icons.my_location : Icons.near_me_outlined,
-                      size: 17,
-                    ),
-              label: Text(
-                _isNearMeActive ? 'Near Me' : 'Near Me',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              onPressed: _locating ? null : () => _findNearMe(model),
             ),
-          ),
           ],
         ),
       ],
@@ -997,7 +1027,7 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
           return FilterChip(
             selected: isSelected,
             showCheckmark: false,
-            label: Text(type),
+            label: LocalizedText(type),
             labelStyle: TextStyle(
               fontSize: 12,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
@@ -1012,7 +1042,9 @@ class _CustomerTrucksScreenState extends State<CustomerTrucksScreen> {
               side: BorderSide(
                 color: isSelected
                     ? Colors.transparent
-                    : Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.6),
+                    : Theme.of(
+                        context,
+                      ).colorScheme.outlineVariant.withValues(alpha: 0.6),
               ),
             ),
             onSelected: (val) {
@@ -1084,7 +1116,7 @@ class _TruckCard extends StatelessWidget {
                   ),
                 ),
                 child: Center(
-                  child: Text(
+                  child: LocalizedText(
                     truck.driverName.trim().isEmpty
                         ? 'D'
                         : truck.driverName.trim()[0].toUpperCase(),
@@ -1125,8 +1157,8 @@ class _TruckCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      '${truck.vehicleType} • ${_feet(truck.lengthFt)} body',
+                    LocalizedText(
+                      '${localize(context, truck.vehicleType)} • ${_feet(truck.lengthFt)} body',
                       style: TextStyle(
                         fontSize: 12,
                         color: theme.colorScheme.onSurfaceVariant,
@@ -1141,7 +1173,9 @@ class _TruckCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF332F1A) : const Color(0xFFFFF9C4),
+                  color: isDark
+                      ? const Color(0xFF332F1A)
+                      : const Color(0xFFFFF9C4),
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
                     color: const Color(0xFFFBC02D).withValues(alpha: 0.7),
@@ -1167,7 +1201,9 @@ class _TruckCard extends StatelessWidget {
                         fontWeight: FontWeight.w900,
                         fontSize: 11,
                         letterSpacing: 0.6,
-                        color: isDark ? const Color(0xFFFFF176) : const Color(0xFF3E2723),
+                        color: isDark
+                            ? const Color(0xFFFFF176)
+                            : const Color(0xFF3E2723),
                       ),
                     ),
                   ],
@@ -1213,7 +1249,7 @@ class _TruckCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       'Ready at ${truck.location}',
                       style: const TextStyle(
                         fontSize: 13,
@@ -1222,7 +1258,7 @@ class _TruckCard extends StatelessWidget {
                     ),
                     if ((truck.preferredDestination ?? '').isNotEmpty) ...[
                       const SizedBox(height: 10),
-                      Text(
+                      LocalizedText(
                         'Heading to ${truck.preferredDestination}',
                         style: const TextStyle(
                           fontSize: 13,
@@ -1274,10 +1310,14 @@ class _TruckCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+                color: theme.colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.45,
+                ),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+                  color: theme.colorScheme.outlineVariant.withValues(
+                    alpha: 0.4,
+                  ),
                 ),
               ),
               child: Row(
@@ -1313,12 +1353,14 @@ class _TruckCard extends StatelessWidget {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
               const SizedBox(width: 6),
-              Text(
-                'Available ${DateFormat('d MMM, h:mm a').format(truck.availableFrom.toLocal())}',
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.onSurfaceVariant,
+              Flexible(
+                child: LocalizedText(
+                  'Available ${DateFormat('d MMM, h:mm a').format(truck.availableFrom.toLocal())}',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
             ],
@@ -1341,7 +1383,7 @@ class _TruckCard extends StatelessWidget {
               ),
               onPressed: onInvite,
               icon: const Icon(Icons.send_rounded, size: 16),
-              label: Text(
+              label: LocalizedText(
                 selectedLoad == null
                     ? 'Invite for a Load'
                     : 'Invite for this Load',
@@ -1372,7 +1414,9 @@ class _TruckCard extends StatelessWidget {
         color: isDark ? darkColor.withValues(alpha: 0.25) : lightBg,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isDark ? darkColor.withValues(alpha: 0.45) : darkColor.withValues(alpha: 0.2),
+          color: isDark
+              ? darkColor.withValues(alpha: 0.45)
+              : darkColor.withValues(alpha: 0.2),
           width: 0.8,
         ),
       ),
@@ -1381,7 +1425,7 @@ class _TruckCard extends StatelessWidget {
         children: [
           Icon(icon, size: 13, color: isDark ? Colors.white70 : darkColor),
           const SizedBox(width: 5),
-          Text(
+          LocalizedText(
             text,
             style: TextStyle(
               fontSize: 11,

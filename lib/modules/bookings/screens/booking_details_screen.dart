@@ -1,3 +1,4 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import '../widgets/trip_directions.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -81,7 +82,7 @@ class BookingDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Booking details')),
+    appBar: AppBar(title: const LocalizedText('Booking details')),
     body: PageBody(
       narrow: true,
       onRefresh: () => context.read<BookingDetailsCubit>().load(id),
@@ -210,7 +211,7 @@ class _BookingContent extends StatelessWidget {
       if (booking.itemsCollected)
         const ListTile(
           leading: Icon(Icons.inventory_2_outlined),
-          title: Text('Item collected'),
+          title: LocalizedText('Item collected'),
         ),
       _StatusHero(booking: booking, isCustomer: isCustomer),
       const SizedBox(height: 16),
@@ -283,19 +284,19 @@ class _BookingContent extends StatelessWidget {
                   width: tileWidth,
                   icon: Icons.scale_outlined,
                   label: 'WEIGHT',
-                  value: load.weightLabel,
+                  value: localize(context, load.weightLabel),
                 ),
                 _DetailTile(
                   width: tileWidth,
                   icon: Icons.local_shipping_outlined,
                   label: 'VEHICLE',
-                  value: load.vehicle,
+                  value: localize(context, load.vehicle),
                 ),
                 _DetailTile(
                   width: tileWidth,
                   icon: Icons.straighten_outlined,
                   label: 'LENGTH',
-                  value: load.vehicleLengthLabel,
+                  value: localize(context, load.vehicleLengthLabel),
                 ),
               ],
             );
@@ -311,9 +312,13 @@ class _BookingContent extends StatelessWidget {
             InfoRow(
               Icons.schedule_outlined,
               'Pickup',
-              load.pickupScheduleLabel,
+              localize(context, load.pickupScheduleLabel),
             ),
-            InfoRow(Icons.currency_rupee_outlined, 'Freight', load.priceLabel),
+            InfoRow(
+              Icons.currency_rupee_outlined,
+              'Freight',
+              localize(context, load.priceLabel),
+            ),
             if (load.specialNote.trim().isNotEmpty)
               InfoRow(Icons.notes_outlined, 'Special note', load.specialNote),
           ],
@@ -341,7 +346,7 @@ class _BookingContent extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
+                  child: LocalizedText(
                     booking.otherName.isEmpty
                         ? 'Contact details pending'
                         : booking.otherName,
@@ -350,7 +355,7 @@ class _BookingContent extends StatelessWidget {
                 ),
                 if (onCall != null)
                   IconButton.filledTonal(
-                    tooltip: 'Call contact',
+                    tooltip: localize(context, 'Call contact'),
                     onPressed: busy ? null : onCall,
                     icon: const Icon(Icons.call_outlined),
                   ),
@@ -368,7 +373,7 @@ class _BookingContent extends StatelessWidget {
               TextButton.icon(
                 onPressed: busy ? null : onCall,
                 icon: const Icon(Icons.call_outlined),
-                label: const Text('Call contact'),
+                label: const LocalizedText('Call contact'),
               ),
             ],
           ],
@@ -379,11 +384,14 @@ class _BookingContent extends StatelessWidget {
         _UpdateNote(note: booking.reason!),
       ],
       const SizedBox(height: 24),
-      Text('Booking timeline', style: Theme.of(context).textTheme.titleLarge),
+      LocalizedText(
+        'Booking timeline',
+        style: Theme.of(context).textTheme.titleLarge,
+      ),
       const SizedBox(height: 12),
       _Timeline(events: booking.events),
       const SizedBox(height: 16),
-      Text(
+      LocalizedText(
         booking.status == 'in_transit'
             ? 'Live location is shared while the driver keeps location access enabled.'
             : 'Booking updates are shared with both parties here.',
@@ -441,13 +449,15 @@ class _WorkflowSummary extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Stage: ${statusLabel(booking.displayStatus)}'),
-        Text(
+        LocalizedText(
+          'Stage: ${localize(context, statusLabel(booking.displayStatus))}',
+        ),
+        LocalizedText(
           booking.vehicle == null
               ? (booking.status == 'requested' || booking.status == 'accepted'
                     ? 'Truck selection required'
                     : 'Truck details not recorded for this booking')
-              : '${booking.vehicle!.registrationNumber} · ${booking.vehicle!.vehicleType} · ${booking.vehicle!.capacityTonnes} t',
+              : '${booking.vehicle!.registrationNumber} · ${localize(context, booking.vehicle!.vehicleType)} · ${booking.vehicle!.capacityTonnes} t',
         ),
         if (!isCustomer &&
             booking.vehicleId == null &&
@@ -456,26 +466,28 @@ class _WorkflowSummary extends StatelessWidget {
             onPressed: busy
                 ? null
                 : () => ensureBookingTruck(context, booking.id),
-            child: const Text('Select assigned truck'),
+            child: const LocalizedText('Select assigned truck'),
           ),
         const Divider(),
-        Text('Payment: ${booking.paymentLabel}'),
-        Text(
-          'Agreed freight: ${booking.freight == null ? 'Not set' : '₹${booking.freight!.toStringAsFixed(2)}'}',
+        LocalizedText('Payment: ${localize(context, booking.paymentLabel)}'),
+        LocalizedText(
+          'Agreed freight: ${localize(context, booking.freight == null ? 'Not set' : '₹${booking.freight!.toStringAsFixed(2)}')}',
         ),
-        Text('Collected: ₹${booking.amountCollected.toStringAsFixed(2)}'),
+        LocalizedText(
+          'Collected: ₹${booking.amountCollected.toStringAsFixed(2)}',
+        ),
         if (booking.balance != null)
-          Text('Balance: ₹${booking.balance!.toStringAsFixed(2)}'),
+          LocalizedText('Balance: ₹${booking.balance!.toStringAsFixed(2)}'),
         if (!isCustomer && booking.canRecordPayment)
           FilledButton.icon(
             onPressed: busy
                 ? null
                 : () => collectBookingPayment(context, booking),
             icon: const Icon(Icons.payments_outlined),
-            label: const Text('Record payment collected'),
+            label: const LocalizedText('Record payment collected'),
           ),
         if (booking.deliveryIssue != null)
-          Text(
+          LocalizedText(
             'Delivery issue: ${booking.deliveryIssue}',
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
@@ -497,19 +509,19 @@ class _WorkflowSummary extends StatelessWidget {
                       );
                     }
                   },
-            child: const Text('Report delivery issue'),
+            child: const LocalizedText('Report delivery issue'),
           ),
         if (!isCustomer &&
             booking.isLiveTrip &&
             booking.load.unloadStops.isNotEmpty) ...[
           const SizedBox(height: 12),
-          const Text(
+          const LocalizedText(
             'At each stop, mark Unloaded here. Reopen directions to skip completed stops.',
           ),
           OutlinedButton.icon(
             onPressed: busy ? null : () => openTripDirections(context, booking),
             icon: const Icon(Icons.directions_outlined),
-            label: const Text('Navigate delivery route'),
+            label: const LocalizedText('Navigate delivery route'),
           ),
         ],
         for (var i = 0; i < booking.load.unloadStops.length; i++)
@@ -520,10 +532,10 @@ class _WorkflowSummary extends StatelessWidget {
                   ? Icons.check_circle_outline
                   : Icons.inventory_2_outlined,
             ),
-            title: Text(
+            title: LocalizedText(
               'Stop ${i + 1}: ${booking.load.unloadStops[i].location}',
             ),
-            subtitle: Text(
+            subtitle: LocalizedText(
               booking.unloadedStopIndices.contains(i)
                   ? 'Unloaded'
                   : 'Unloading pending',
@@ -547,7 +559,7 @@ class _WorkflowSummary extends StatelessWidget {
                                   .markStopUnloaded(booking.id, i);
                             }
                           },
-                    child: const Text('Unloaded'),
+                    child: const LocalizedText('Unloaded'),
                   )
                 : null,
           ),
@@ -576,7 +588,7 @@ class _StatusHero extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(
+                child: LocalizedText(
                   'SHIPMENT STATUS',
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
                     color: Theme.of(
@@ -618,12 +630,14 @@ class _StatusHero extends StatelessWidget {
                   ).colorScheme.onPrimary.withValues(alpha: .72),
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  '${booking.load.weightLabel} · ${booking.load.vehicle}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onPrimary.withValues(alpha: .78),
+                Flexible(
+                  child: LocalizedText(
+                    '${localize(context, booking.load.weightLabel)} · ${localize(context, booking.load.vehicle)}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onPrimary.withValues(alpha: .78),
+                    ),
                   ),
                 ),
               ],
@@ -654,7 +668,7 @@ class _StatusHero extends StatelessWidget {
               ),
               const SizedBox(width: 7),
               Expanded(
-                child: Text(
+                child: LocalizedText(
                   booking.load.priceLabel,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onPrimary,
@@ -662,7 +676,7 @@ class _StatusHero extends StatelessWidget {
                   ),
                 ),
               ),
-              Text(
+              LocalizedText(
                 isCustomer ? 'Customer load' : 'Driver booking',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: Theme.of(
@@ -704,7 +718,7 @@ class _SectionCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
+                child: LocalizedText(
                   title,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
@@ -740,7 +754,7 @@ class _JourneyPoint extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            LocalizedText(
               label,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 letterSpacing: .9,
@@ -749,9 +763,9 @@ class _JourneyPoint extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 2),
-            Text(place, style: Theme.of(context).textTheme.titleSmall),
+            LocalizedText(place, style: Theme.of(context).textTheme.titleSmall),
             if (detail != null)
-              Text(
+              LocalizedText(
                 detail!,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -797,7 +811,7 @@ class _DetailTile extends StatelessWidget {
       children: [
         Icon(icon, size: 17, color: Theme.of(context).colorScheme.primary),
         const SizedBox(height: 10),
-        Text(
+        LocalizedText(
           label,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
             letterSpacing: .8,
@@ -837,7 +851,7 @@ class _UpdateNote extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: Text(
+          child: LocalizedText(
             note,
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSecondaryContainer,
@@ -888,7 +902,7 @@ class _NextStepCard extends StatelessWidget {
               ),
               const SizedBox(width: 9),
               Expanded(
-                child: Text(
+                child: LocalizedText(
                   'Next step',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onPrimaryContainer,
@@ -898,7 +912,7 @@ class _NextStepCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
+          LocalizedText(
             _message,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Theme.of(context).colorScheme.onPrimaryContainer,
@@ -915,7 +929,7 @@ class _NextStepCard extends StatelessWidget {
             const SizedBox(height: 6),
             TextButton(
               onPressed: busy ? null : onCancel,
-              child: Text(
+              child: LocalizedText(
                 booking.status == 'requested'
                     ? 'Withdraw request'
                     : 'Cancel booking',
@@ -984,7 +998,7 @@ class _NextStepCard extends StatelessWidget {
         OutlinedButton.icon(
           onPressed: onTrack,
           icon: const Icon(Icons.location_searching_outlined),
-          label: const Text('Track truck location'),
+          label: const LocalizedText('Track truck location'),
         ),
       ];
     }
@@ -1009,7 +1023,7 @@ class _NextStepCard extends StatelessWidget {
                   'Decline request?',
                   'The driver will be notified of your decision.',
                 ),
-          child: const Text('Decline request'),
+          child: const LocalizedText('Decline request'),
         ),
       ];
     }
@@ -1054,7 +1068,7 @@ class _NextStepCard extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: onTrack,
             icon: const Icon(Icons.location_searching_outlined),
-            label: Text(
+            label: LocalizedText(
               isCustomer ? 'Track truck location' : 'Share trip location',
             ),
           ),
@@ -1104,7 +1118,7 @@ class _Timeline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (events.isEmpty) {
-      return const Text('No booking updates have been recorded yet.');
+      return const LocalizedText('No booking updates have been recorded yet.');
     }
     return Column(
       children: List.generate(events.length, (index) {
@@ -1146,12 +1160,12 @@ class _Timeline extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      LocalizedText(
                         statusLabel(event.status),
                         style: Theme.of(context).textTheme.titleSmall,
                       ),
                       const SizedBox(height: 2),
-                      Text(
+                      LocalizedText(
                         DateFormat(
                           'd MMM yyyy, h:mm a',
                         ).format(event.at.toLocal()),

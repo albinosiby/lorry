@@ -20,6 +20,7 @@ import 'package:lorry_link/modules/verification/models/profile_document_model.da
 import 'package:lorry_link/modules/driver_documents/cubit/driver_documents_cubit.dart';
 import 'package:lorry_link/modules/driver_documents/models/driver_document_model.dart';
 import 'support/fakes.dart';
+import 'package:lorry_link/modules/account/models/terms_content.dart';
 
 class DriverPostedBooking extends FakeBookings {
   @override
@@ -253,6 +254,18 @@ void main() {
       'qa@example.invalid',
     );
     await tester.enterText(find.byType(TextFormField).at(1), 'secure-password');
+    await tester.ensureVisible(find.text('Sign in').last);
+    await tester.tap(find.text('Sign in').last);
+    await tester.pumpAndSettle();
+    expect(auth.signInCalls, 0);
+    expect(
+      find.text('Please agree to the Terms & Conditions to continue.'),
+      findsOneWidget,
+    );
+    await tester.ensureVisible(find.byType(Checkbox));
+    await tester.tap(find.byType(Checkbox));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Sign in').last);
     await tester.tap(find.text('Sign in').last);
     await tester.pumpAndSettle();
     expect(auth.signInCalls, 1);
@@ -260,6 +273,87 @@ void main() {
     expect(find.text('Continue with Google'), findsNothing);
     await finish(tester, auth);
   });
+  testWidgets(
+    'sign-up requires consent and public terms preserve form values',
+    (tester) async {
+      final auth = FakeAuth(authenticated: false);
+      await start(tester, auth);
+      final router = GoRouter.of(tester.element(find.byType(WelcomeScreen)));
+      router.go('/sign-up?role=driver');
+      await tester.pumpAndSettle();
+      for (final entry in [
+        'QA Driver',
+        'qa@example.invalid',
+        'StrongPass123!',
+        'StrongPass123!',
+      ].asMap().entries) {
+        await tester.enterText(
+          find.byType(TextFormField).at(entry.key),
+          entry.value,
+        );
+      }
+      await tester.ensureVisible(find.text('Create account').last);
+      await tester.tap(find.text('Create account').last);
+      await tester.pumpAndSettle();
+      expect(auth.signUpCalls, 0);
+      expect(
+        find.text('Please agree to the Terms & Conditions to continue.'),
+        findsOneWidget,
+      );
+      await tester.ensureVisible(find.text('Terms & Conditions'));
+      await tester.tap(find.text('Terms & Conditions'));
+      await tester.pumpAndSettle();
+      for (final section in TermsContent.sections) {
+        expect(find.text(section.title), findsOneWidget);
+        expect(find.text(section.text), findsOneWidget);
+      }
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(find.text('QA Driver'), findsOneWidget);
+      expect(tester.widget<Checkbox>(find.byType(Checkbox)).value, isFalse);
+      await tester.ensureVisible(find.byType(Checkbox));
+      await tester.tap(find.byType(Checkbox));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Create account').last);
+      await tester.tap(find.text('Create account').last);
+      await tester.pumpAndSettle();
+      expect(auth.signUpCalls, 1);
+      await finish(tester, auth);
+    },
+  );
+  testWidgets(
+    'Profile opens the same terms and password reset has no consent gate',
+    (tester) async {
+      final auth = FakeAuth();
+      await start(tester, auth);
+      final router = GoRouter.of(tester.element(find.byType(HomeScreen)));
+      router.go('/profile');
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Terms & Conditions'));
+      await tester.tap(find.text('Terms & Conditions'));
+      await tester.pumpAndSettle();
+      for (final section in TermsContent.sections) {
+        expect(find.text(section.text), findsOneWidget);
+      }
+      await finish(tester, auth);
+      final signedOut = FakeAuth(authenticated: false);
+      await start(tester, signedOut);
+      final publicRouter = GoRouter.of(
+        tester.element(find.byType(WelcomeScreen)),
+      );
+      publicRouter.go('/sign-in');
+      await tester.pumpAndSettle();
+      tester.view.physicalSize = const Size(320, 1000);
+      tester.platformDispatcher.textScaleFactorTestValue = 1.8;
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byType(Checkbox));
+      expect(tester.takeException(), isNull);
+      publicRouter.go('/forgot-password');
+      await tester.pumpAndSettle();
+      expect(find.byType(Checkbox), findsNothing);
+      await finish(tester, signedOut);
+    },
+  );
   testWidgets('profile requires a mobile number before saving', (tester) async {
     final auth = FakeAuth();
     await start(tester, auth);
@@ -602,6 +696,24 @@ void main() {
       expect(tester.takeException(), isNull);
       await finish(tester, auth);
     }
+    final signedOut = FakeAuth(authenticated: false);
+    final authKey = GlobalKey();
+    await start(tester, signedOut, capture: authKey);
+    final authRouter = GoRouter.of(tester.element(find.byType(WelcomeScreen)));
+    for (final route in {
+      'sign-in': '/sign-in',
+      'sign-up': '/sign-up',
+      'terms': '/profile/terms',
+    }.entries) {
+      authRouter.go(route.value);
+      await tester.pumpAndSettle();
+      if (route.key != 'terms') {
+        await tester.ensureVisible(find.byType(Checkbox));
+      }
+      await tester.pumpAndSettle();
+      await captureFrame(tester, authKey, 'qa-auth-${route.key}');
+    }
+    await finish(tester, signedOut);
     for (final current in [shipper, driver]) {
       final auth = FakeAuth(current: current);
       final key = GlobalKey();
@@ -618,6 +730,7 @@ void main() {
         'booking-details': '/bookings/20000000-0000-4000-8000-000000000001',
         'notifications': '/notifications',
         'profile': '/profile',
+        'settings': '/profile/settings',
       };
       for (final route in routes.entries) {
         router.go(route.value);

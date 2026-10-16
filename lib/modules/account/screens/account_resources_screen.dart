@@ -1,6 +1,8 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:lorry_link/design_system/design_system.dart';
+import '../models/terms_content.dart';
 
 enum AccountResource { legal, support }
 
@@ -10,7 +12,7 @@ class AccountResourcesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(_title)),
+    appBar: AppBar(title: LocalizedText(_title)),
     body: PageBody(
       narrow: true,
       child: switch (resource) {
@@ -21,33 +23,20 @@ class AccountResourcesScreen extends StatelessWidget {
   );
 
   String get _title => switch (resource) {
-    AccountResource.legal => 'Terms & privacy',
+    AccountResource.legal => 'Terms & Conditions',
     AccountResource.support => 'Support',
   };
 
-  Widget _legal(BuildContext context) => const Column(
+  Widget _legal(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      PageHeading(
-        'Clear and practical',
-        'Terms & privacy',
-        'Using LORRY LINK means coordinating a transport booking directly with another verified account.',
+      const PageHeading(
+        'LORRY LINK',
+        'Terms & Conditions',
+        'Please read these terms before using your customer or driver account.',
       ),
-      _PolicyCard(
-        title: 'Booking terms',
-        text:
-            'A booking is assigned only after the customer accepts a driver request or the driver accepts a customer invitation. Confirm cargo, price, and timing before starting a trip.',
-      ),
-      _PolicyCard(
-        title: 'Location privacy',
-        text:
-            'Driver location is collected only for an in-transit booking. The assigned customer and driver can see the latest shared location; it is not a public driver tracker.',
-      ),
-      _PolicyCard(
-        title: 'Verification data',
-        text:
-            'Identity documents are stored in a private file area for verification. They are not shown to other customers or drivers.',
-      ),
+      for (final section in TermsContent.sections)
+        _PolicyCard(title: section.title, text: section.text),
     ],
   );
 
@@ -62,8 +51,8 @@ class AccountResourcesScreen extends StatelessWidget {
       Card(
         child: ListTile(
           leading: const Icon(Icons.email_outlined),
-          title: const Text('Email support'),
-          subtitle: const Text('support@lorrylink.app'),
+          title: const LocalizedText('Email support'),
+          subtitle: const LocalizedText('support@lorrylink.app'),
           trailing: const Icon(Icons.open_in_new),
           onTap: () =>
               launchUrl(Uri(scheme: 'mailto', path: 'support@lorrylink.app')),
@@ -72,8 +61,8 @@ class AccountResourcesScreen extends StatelessWidget {
       const Card(
         child: ListTile(
           leading: Icon(Icons.emergency_outlined),
-          title: Text('Emergency during an active trip'),
-          subtitle: Text(
+          title: LocalizedText('Emergency during an active trip'),
+          subtitle: LocalizedText(
             'Contact local emergency services first, then report the issue to support.',
           ),
         ),
@@ -92,9 +81,9 @@ class _PolicyCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: Theme.of(context).textTheme.titleMedium),
+          LocalizedText(title, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
-          Text(text),
+          LocalizedText(text),
         ],
       ),
     ),

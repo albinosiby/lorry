@@ -1,3 +1,4 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../design_system/design_system.dart';
@@ -54,19 +55,19 @@ class _PaymentSheetState extends State<_PaymentSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
+            LocalizedText(
               'Record payment collected',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
-            Text(
+            LocalizedText(
               'Collected so far: ₹${widget.booking.amountCollected.toStringAsFixed(2)}',
             ),
             if (widget.booking.balance != null)
-              Text(
+              LocalizedText(
                 'Remaining balance: ₹${widget.booking.balance!.toStringAsFixed(2)}',
               ),
-            const Text(
+            const LocalizedText(
               'Record only money actually received. Partial collection is allowed. This does not charge the customer online.',
             ),
             const SizedBox(height: 16),
@@ -77,12 +78,7 @@ class _PaymentSheetState extends State<_PaymentSheet> {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
-                validator: (value) {
-                  final n = double.tryParse(value ?? '');
-                  return n == null || !n.isFinite || n <= 0
-                      ? 'Enter the agreed total freight.'
-                      : null;
-                },
+                validator: (value) {final n = double.tryParse(value ?? ''); return n == null || !n.isFinite || n <= 0 ? 'Enter the agreed total freight.' : null;},
               ),
             AppTextField(
               controller: amount,
@@ -90,18 +86,7 @@ class _PaymentSheetState extends State<_PaymentSheet> {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
-              validator: (value) {
-                final n = double.tryParse(value ?? '');
-                final remaining =
-                    widget.booking.balance ??
-                    ((double.tryParse(freight.text) ?? 0) -
-                        widget.booking.amountCollected);
-                return n == null || !n.isFinite || n <= 0
-                    ? 'Enter a valid amount.'
-                    : n > remaining
-                    ? 'Amount exceeds the remaining balance.'
-                    : null;
-              },
+              validator: (value) {final n = double.tryParse(value ?? ''); final remaining = widget.booking.balance ?? ((double.tryParse(freight.text) ?? 0) - widget.booking.amountCollected); return n == null || !n.isFinite || n <= 0 ? 'Enter a valid amount.' : n > remaining ? 'Amount exceeds the remaining balance.' : null;},
             ),
             const SizedBox(height: 16),
             AppButton(

@@ -1,3 +1,4 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -53,7 +54,10 @@ class AdaptiveScaffold extends StatelessWidget {
                 for (var i = 0; i < 4; i++)
                   NavigationDrawerDestination(
                     icon: Icon(icons[i]),
-                    label: Text(labels[i]),
+                    label: SizedBox(
+                      width: 150,
+                      child: LocalizedText(labels[i]),
+                    ),
                   ),
               ],
             ),
@@ -67,7 +71,7 @@ class AdaptiveScaffold extends StatelessWidget {
               for (var i = 0; i < 4; i++)
                 NavigationRailDestination(
                   icon: Icon(icons[i]),
-                  label: Text(labels[i]),
+                  label: LocalizedText(labels[i]),
                 ),
             ],
           ),
@@ -86,10 +90,10 @@ class AdaptiveScaffold extends StatelessWidget {
       appBar: isHome
           ? null
           : AppBar(
-              title: Text(title),
+              title: LocalizedText(title),
               actions: [
                 IconButton(
-                  tooltip: 'Notifications',
+                  tooltip: localize(context, 'Notifications'),
                   onPressed: () => context.push('/notifications'),
                   icon: const Icon(Icons.notifications_none),
                 ),
@@ -103,7 +107,10 @@ class AdaptiveScaffold extends StatelessWidget {
               onDestinationSelected: select,
               destinations: [
                 for (var i = 0; i < 4; i++)
-                  NavigationDestination(icon: Icon(icons[i]), label: labels[i]),
+                  NavigationDestination(
+                    icon: Icon(icons[i]),
+                    label: localize(context, labels[i]),
+                  ),
               ],
             )
           : null,

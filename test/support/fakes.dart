@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:lorry_link/modules/settings/repositories/language_repository_interface.dart';
 import 'dart:typed_data';
 import 'package:lorry_link/di/injection.dart';
 import 'package:lorry_link/modules/auth/models/auth_models.dart';
@@ -60,6 +61,7 @@ class FakeAuth implements IAuthRepository {
   bool authenticated;
   final controller = StreamController<SessionEvent>.broadcast();
   int signInCalls = 0;
+  int signUpCalls = 0;
   @override
   Stream<SessionEvent> get events => controller.stream;
   @override
@@ -81,7 +83,11 @@ class FakeAuth implements IAuthRepository {
   }
 
   @override
-  Future<bool> signUp(SignUpModel model) async => false;
+  Future<bool> signUp(SignUpModel model) async {
+    signUpCalls++;
+    return false;
+  }
+
   @override
   Future<void> google() async {}
   @override
@@ -414,6 +420,7 @@ Future<void> setupFakes(
   FakeBookings? bookings,
 }) async {
   await di.reset();
+  di.registerSingleton<ILanguageRepository>(FakeLanguageRepository());
   di.registerSingleton<IAuthRepository>(auth);
   di.registerSingleton<IProfileRepository>(FakeProfile(auth));
   di.registerSingleton<ILoadRepository>(loads ?? FakeLoads());
@@ -426,4 +433,16 @@ Future<void> setupFakes(
   di.registerSingleton<IProfileDocumentsRepository>(FakeProfileDocuments());
   di.registerSingleton<ITripTrackingRepository>(FakeTripTracking());
   configureCubits();
+}
+
+class FakeLanguageRepository implements ILanguageRepository {
+  String? code;
+  bool fail = false;
+  @override
+  Future<String?> read() async => code;
+  @override
+  Future<void> save(String value) async {
+    if (fail) throw StateError('Storage unavailable');
+    code = value;
+  }
 }

@@ -1,3 +1,4 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -22,7 +23,7 @@ class VerificationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Identity verification')),
+    appBar: AppBar(title: const LocalizedText('Identity verification')),
     body: PageBody(
       narrow: true,
       onRefresh: () => context.read<ProfileDocumentsCubit>().load(),
@@ -120,7 +121,7 @@ class _CustomerIdentityDocumentSectionState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
+                LocalizedText(
                   customerIdentityLabel(document.type),
                   style: Theme.of(sheetContext).textTheme.titleMedium,
                 ),
@@ -139,7 +140,7 @@ class _CustomerIdentityDocumentSectionState
                             fit: BoxFit.contain,
                             errorBuilder: (_, _, _) => const Padding(
                               padding: EdgeInsets.all(24),
-                              child: Text(
+                              child: LocalizedText(
                                 'Unable to load this document image. Please try again.',
                                 textAlign: TextAlign.center,
                               ),
@@ -207,11 +208,11 @@ class _CustomerIdentityDocumentSectionState
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                LocalizedText(
                                   customerIdentityLabel(document.type),
                                   style: Theme.of(context).textTheme.titleSmall,
                                 ),
-                                Text(
+                                LocalizedText(
                                   document.status == 'rejected'
                                       ? document.rejectionReason ??
                                             'Please upload a clearer document.'
@@ -232,19 +233,19 @@ class _CustomerIdentityDocumentSectionState
                           TextButton.icon(
                             onPressed: () => _view(document),
                             icon: const Icon(Icons.visibility_outlined),
-                            label: const Text('View'),
+                            label: const LocalizedText('View'),
                           ),
                           TextButton.icon(
                             onPressed: state.busy ? null : () => _pick(type),
                             icon: const Icon(Icons.upload_file_outlined),
-                            label: const Text('Update'),
+                            label: const LocalizedText('Update'),
                           ),
                           TextButton.icon(
                             onPressed: state.busy
                                 ? null
                                 : () => _remove(document),
                             icon: const Icon(Icons.delete_outline),
-                            label: const Text('Remove'),
+                            label: const LocalizedText('Remove'),
                           ),
                         ],
                       ),
@@ -258,14 +259,15 @@ class _CustomerIdentityDocumentSectionState
               key: ValueKey('identity-type-$type'),
               initialValue: type,
               isExpanded: true,
-              decoration: const InputDecoration(
-                labelText: 'Identity document type',
+              decoration: localizedDecoration(
+                context,
+                InputDecoration(labelText: 'Identity document type'),
               ),
               items: customerIdentityTypes.entries
                   .map(
                     (entry) => DropdownMenuItem(
                       value: entry.key,
-                      child: Text(entry.value),
+                      child: LocalizedText(entry.value),
                     ),
                   )
                   .toList(),
@@ -284,7 +286,7 @@ class _CustomerIdentityDocumentSectionState
               onPressed: state.busy ? null : () => _pick(type),
             ),
             const SizedBox(height: 12),
-            const Text(
+            const LocalizedText(
               'Upload one: Aadhaar card, PAN card or driving licence. Accepted: JPG, PNG or PDF · Maximum file size 8 MB',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 12),

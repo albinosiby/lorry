@@ -1,5 +1,10 @@
 import 'dart:async';
+import 'l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'modules/settings/cubit/language_cubit.dart';
+import 'modules/settings/models/app_language.dart';
+import 'core/state/resource_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -112,15 +117,28 @@ class _LorryLinkAppState extends State<LorryLinkApp>
   }
 
   @override
-  Widget build(BuildContext context) => BlocProvider.value(
-    value: session,
+  Widget build(BuildContext context) => MultiBlocProvider(
+    providers: [
+      BlocProvider.value(value: session),
+      BlocProvider(create: (_) => di<LanguageCubit>()..load()),
+    ],
     child: AppSizing(
-      builder: () => MaterialApp.router(
-        title: 'LORRY LINK',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.build(Brightness.light),
-        themeMode: ThemeMode.light,
-        routerConfig: router,
+      builder: () => BlocBuilder<LanguageCubit, ResourceState<AppLanguage>>(
+        builder: (context, language) => MaterialApp.router(
+          locale: Locale((language.data ?? AppLanguage.english).code),
+          supportedLocales: AppLanguage.values.map(
+            (language) => Locale(language.code),
+          ),
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
+          title: 'LORRY LINK',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.build(Brightness.light),
+          themeMode: ThemeMode.light,
+          routerConfig: router,
+        ),
       ),
     ),
   );

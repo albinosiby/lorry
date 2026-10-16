@@ -29,8 +29,7 @@ class BookingDetailsCubit extends ResourceCubit<BookingDetailsModel> {
             (v) =>
                 v.capacityTonnes >= load.weightTonnes &&
                 v.lengthFt >= (load.requiredVehicleLengthFt ?? 0) &&
-                (v.vehicleType.toLowerCase() == load.vehicle.toLowerCase() ||
-                    v.bodyType.toLowerCase() == load.vehicle.toLowerCase()),
+                vehicleTypeFitsLoad(v.vehicleType, v.bodyType, load.vehicle),
           )
           .toList();
 

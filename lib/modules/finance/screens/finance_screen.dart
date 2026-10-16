@@ -1,3 +1,4 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -31,10 +32,10 @@ class _FinanceScreenState extends State<FinanceScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Fleet & Trip Finance Tracker'),
+        title: const LocalizedText('Fleet & Trip Finance Tracker'),
         actions: [
           IconButton(
-            tooltip: 'Refresh Ledger',
+            tooltip: localize(context, 'Refresh Ledger'),
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () => context.read<FinanceCubit>().load(),
           ),
@@ -47,148 +48,180 @@ class _FinanceScreenState extends State<FinanceScreen> {
         foregroundColor: Colors.white,
         onPressed: () => _openAddEntrySheet(context),
         icon: const Icon(Icons.add_rounded, size: 20),
-        label: const Text(
+        label: const LocalizedText(
           'Add Entry',
           style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.3),
         ),
       ),
       body: PageBody(
         onRefresh: () => context.read<FinanceCubit>().load(),
-        child: BlocConsumer<FinanceCubit, ResourceState<List<FinanceEntryModel>>>(
-          listener: (context, state) {
-            if (state.error != null) showNotice(context, state.error!);
-            if (state.notice != null) showNotice(context, state.notice!);
-          },
-          builder: (context, state) => ResourceView<List<FinanceEntryModel>>(
-            state: state,
-            retry: () => context.read<FinanceCubit>().load(),
-            builder: (entries) {
-              final now = DateTime.now();
-              final monthEntries = entries
-                  .where(
-                    (entry) =>
-                        entry.occurredOn.year == now.year &&
-                        entry.occurredOn.month == now.month,
-                  )
-                  .toList();
+        child:
+            BlocConsumer<FinanceCubit, ResourceState<List<FinanceEntryModel>>>(
+              listener: (context, state) {
+                if (state.error != null) showNotice(context, state.error!);
+                if (state.notice != null) showNotice(context, state.notice!);
+              },
+              builder: (context, state) =>
+                  ResourceView<List<FinanceEntryModel>>(
+                    state: state,
+                    retry: () => context.read<FinanceCubit>().load(),
+                    builder: (entries) {
+                      final now = DateTime.now();
+                      final monthEntries = entries
+                          .where(
+                            (entry) =>
+                                entry.occurredOn.year == now.year &&
+                                entry.occurredOn.month == now.month,
+                          )
+                          .toList();
 
-              final totalIncome = monthEntries
-                  .where((e) => e.type == 'income')
-                  .fold<double>(0, (sum, e) => sum + e.amount);
-              final totalExpenses = monthEntries
-                  .where((e) => e.type == 'expense')
-                  .fold<double>(0, (sum, e) => sum + e.amount);
-              final netProfit = totalIncome - totalExpenses;
+                      final totalIncome = monthEntries
+                          .where((e) => e.type == 'income')
+                          .fold<double>(0, (sum, e) => sum + e.amount);
+                      final totalExpenses = monthEntries
+                          .where((e) => e.type == 'expense')
+                          .fold<double>(0, (sum, e) => sum + e.amount);
+                      final netProfit = totalIncome - totalExpenses;
 
-              // Filtered entries list
-              final filtered = entries.where((e) {
-                // Type or category filter
-                if (_selectedFilter == 'income' && e.type != 'income') return false;
-                if (_selectedFilter == 'expense' && e.type != 'expense') return false;
-                if (_selectedFilter == 'fuel' && e.category.toLowerCase() != 'fuel') return false;
-                if (_selectedFilter == 'toll' && e.category.toLowerCase() != 'toll') return false;
+                      // Filtered entries list
+                      final filtered = entries.where((e) {
+                        // Type or category filter
+                        if (_selectedFilter == 'income' && e.type != 'income') {
+                          return false;
+                        }
+                        if (_selectedFilter == 'expense' &&
+                            e.type != 'expense') {
+                          return false;
+                        }
+                        if (_selectedFilter == 'fuel' &&
+                            e.category.toLowerCase() != 'fuel') {
+                          return false;
+                        }
+                        if (_selectedFilter == 'toll' &&
+                            e.category.toLowerCase() != 'toll') {
+                          return false;
+                        }
 
-                // Search query
-                if (_searchQuery.isNotEmpty) {
-                  final q = _searchQuery.toLowerCase();
-                  final matchCat = e.category.toLowerCase().contains(q);
-                  final matchNote = e.note.toLowerCase().contains(q);
-                  final matchAmount = e.amount.toString().contains(q);
-                  if (!matchCat && !matchNote && !matchAmount) return false;
-                }
-                return true;
-              }).toList();
+                        // Search query
+                        if (_searchQuery.isNotEmpty) {
+                          final q = _searchQuery.toLowerCase();
+                          final matchCat = e.category.toLowerCase().contains(q);
+                          final matchNote = e.note.toLowerCase().contains(q);
+                          final matchAmount = e.amount.toString().contains(q);
+                          if (!matchCat && !matchNote && !matchAmount) {
+                            return false;
+                          }
+                        }
+                        return true;
+                      }).toList();
 
-              final money = NumberFormat.currency(
-                locale: 'en_IN',
-                symbol: '₹',
-                decimalDigits: 0,
-              );
+                      final money = NumberFormat.currency(
+                        locale: 'en_IN',
+                        symbol: '₹',
+                        decimalDigits: 0,
+                      );
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // 1. Finance Command Hero Card
-                  _buildFinancialHero(
-                    context,
-                    income: totalIncome,
-                    expenses: totalExpenses,
-                    net: netProfit,
-                    money: money,
-                    monthEntriesCount: monthEntries.length,
-                    isDark: isDark,
-                  ),
-                  const SizedBox(height: 18),
-
-                  // 2. Category Quick Telemetry Chips
-                  _buildCategoryTelemetryStrip(
-                    monthEntries: monthEntries,
-                    money: money,
-                    isDark: isDark,
-                  ),
-                  const SizedBox(height: 18),
-
-                  // 3. Search & Filter Bar
-                  _buildFilterRow(
-                    isDark: isDark,
-                    totalCount: entries.length,
-                    incomeCount: entries.where((e) => e.type == 'income').length,
-                    expenseCount: entries.where((e) => e.type == 'expense').length,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // 4. Ledger Entries Header
-                  Row(
-                    children: [
-                      Text(
-                        'Transaction Ledger',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.06),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          '${filtered.length}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? Colors.white70 : Colors.black87,
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // 1. Finance Command Hero Card
+                          _buildFinancialHero(
+                            context,
+                            income: totalIncome,
+                            expenses: totalExpenses,
+                            net: netProfit,
+                            money: money,
+                            monthEntriesCount: monthEntries.length,
+                            isDark: isDark,
                           ),
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        DateFormat('MMMM yyyy').format(now),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white60 : Colors.black54,
-                        ),
-                      ),
-                    ],
+                          const SizedBox(height: 18),
+
+                          // 2. Category Quick Telemetry Chips
+                          _buildCategoryTelemetryStrip(
+                            monthEntries: monthEntries,
+                            money: money,
+                            isDark: isDark,
+                          ),
+                          const SizedBox(height: 18),
+
+                          // 3. Search & Filter Bar
+                          _buildFilterRow(
+                            isDark: isDark,
+                            totalCount: entries.length,
+                            incomeCount: entries
+                                .where((e) => e.type == 'income')
+                                .length,
+                            expenseCount: entries
+                                .where((e) => e.type == 'expense')
+                                .length,
+                          ),
+                          const SizedBox(height: 16),
+
+                          // 4. Ledger Entries Header
+                          Row(
+                            children: [
+                              Flexible(
+                                child: LocalizedText(
+                                  'Transaction Ledger',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 16,
+                                    letterSpacing: -0.2,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.1)
+                                      : Colors.black.withValues(alpha: 0.06),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: LocalizedText(
+                                  '${filtered.length}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: isDark
+                                        ? Colors.white70
+                                        : Colors.black87,
+                                  ),
+                                ),
+                              ),
+                              const Spacer(),
+                              Flexible(
+                                child: LocalizedText(
+                                  DateFormat('MMMM yyyy').format(now),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark
+                                        ? Colors.white60
+                                        : Colors.black54,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+
+                          // 5. Transaction Cards Feed
+                          if (filtered.isEmpty)
+                            _buildEmptyState(isDark)
+                          else
+                            ..._groupAndRenderEntries(filtered, money, isDark),
+
+                          const SizedBox(height: 88),
+                        ],
+                      );
+                    },
                   ),
-                  const SizedBox(height: 12),
-
-                  // 5. Transaction Cards Feed
-                  if (filtered.isEmpty)
-                    _buildEmptyState(isDark)
-                  else
-                    ..._groupAndRenderEntries(filtered, money, isDark),
-
-                  const SizedBox(height: 88),
-                ],
-              );
-            },
-          ),
-        ),
+            ),
       ),
     );
   }
@@ -205,18 +238,16 @@ class _FinanceScreenState extends State<FinanceScreen> {
     required bool isDark,
   }) {
     final isProfitable = net >= 0;
-    final marginPercent = income > 0 ? (net / income * 100).clamp(-100, 100) : 0;
+    final marginPercent = income > 0
+        ? (net / income * 100).clamp(-100, 100)
+        : 0;
 
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF0F2018),
-            Color(0xFF193F35),
-            Color(0xFF132F27),
-          ],
+          colors: [Color(0xFF0F2018), Color(0xFF193F35), Color(0xFF132F27)],
         ),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
@@ -235,14 +266,21 @@ class _FinanceScreenState extends State<FinanceScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Eyebrow Row
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.15),
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -250,10 +288,12 @@ class _FinanceScreenState extends State<FinanceScreen> {
                     Icon(
                       Icons.account_balance_wallet_rounded,
                       size: 13,
-                      color: isProfitable ? const Color(0xFF6BDB9C) : const Color(0xFFFFB899),
+                      color: isProfitable
+                          ? const Color(0xFF6BDB9C)
+                          : const Color(0xFFFFB899),
                     ),
                     const SizedBox(width: 5),
-                    Text(
+                    LocalizedText(
                       '${DateFormat('MMMM yyyy').format(DateTime.now()).toUpperCase()} BALANCE',
                       style: const TextStyle(
                         fontSize: 10,
@@ -265,7 +305,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
                   ],
                 ),
               ),
-              const Spacer(),
+
               // Profit Margin Chip
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
@@ -280,12 +320,14 @@ class _FinanceScreenState extends State<FinanceScreen> {
                         : const Color(0xFFEF5350).withValues(alpha: 0.45),
                   ),
                 ),
-                child: Text(
+                child: LocalizedText(
                   isProfitable
                       ? '+${marginPercent.toStringAsFixed(1)}% MARGIN'
                       : '${marginPercent.toStringAsFixed(1)}% DEFICIT',
                   style: TextStyle(
-                    color: isProfitable ? const Color(0xFF6BDB9C) : const Color(0xFFFF8A80),
+                    color: isProfitable
+                        ? const Color(0xFF6BDB9C)
+                        : const Color(0xFFFF8A80),
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.5,
@@ -297,7 +339,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
           const SizedBox(height: 16),
 
           // Main Net Balance Figure
-          Text(
+          LocalizedText(
             'Net Operating Profit',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.7),
@@ -306,12 +348,13 @@ class _FinanceScreenState extends State<FinanceScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+
             children: [
-              Text(
-                '${net < 0 ? '-' : '+'}${money.format(net.abs())}',
+              LocalizedText(
+                '${localize(context, net < 0 ? '-' : '+')}${money.format(net.abs())}',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 32,
@@ -320,7 +363,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
+              LocalizedText(
                 'this month',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.55),
@@ -338,7 +381,10 @@ class _FinanceScreenState extends State<FinanceScreen> {
               // Income Column
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(14),
@@ -355,7 +401,9 @@ class _FinanceScreenState extends State<FinanceScreen> {
                             width: 22,
                             height: 22,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF6BDB9C).withValues(alpha: 0.2),
+                              color: const Color(
+                                0xFF6BDB9C,
+                              ).withValues(alpha: 0.2),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
@@ -365,18 +413,20 @@ class _FinanceScreenState extends State<FinanceScreen> {
                             ),
                           ),
                           const SizedBox(width: 7),
-                          Text(
-                            'Freight Income',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.75),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
+                          Flexible(
+                            child: LocalizedText(
+                              'Freight Income',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.75),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Text(
+                      LocalizedText(
                         money.format(income),
                         style: const TextStyle(
                           color: Color(0xFF6BDB9C),
@@ -393,7 +443,10 @@ class _FinanceScreenState extends State<FinanceScreen> {
               // Expense Column
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(14),
@@ -410,7 +463,9 @@ class _FinanceScreenState extends State<FinanceScreen> {
                             width: 22,
                             height: 22,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFFB899).withValues(alpha: 0.2),
+                              color: const Color(
+                                0xFFFFB899,
+                              ).withValues(alpha: 0.2),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
@@ -420,18 +475,20 @@ class _FinanceScreenState extends State<FinanceScreen> {
                             ),
                           ),
                           const SizedBox(width: 7),
-                          Text(
-                            'Trip Expenses',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.75),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
+                          Flexible(
+                            child: LocalizedText(
+                              'Trip Expenses',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.75),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Text(
+                      LocalizedText(
                         money.format(expenses),
                         style: const TextStyle(
                           color: Color(0xFFFFB899),
@@ -467,10 +524,34 @@ class _FinanceScreenState extends State<FinanceScreen> {
     final allowanceTotal = sumCategory('driver_allowance');
 
     final items = [
-      ('Fuel (Diesel)', fuelTotal, Icons.local_gas_station_rounded, const Color(0xFFFF9800), 'fuel'),
-      ('Toll & Fastag', tollTotal, Icons.toll_rounded, const Color(0xFF2196F3), 'toll'),
-      ('Maintenance', maintenanceTotal, Icons.build_rounded, const Color(0xFF9C27B0), 'maintenance'),
-      ('Driver Bata', allowanceTotal, Icons.fastfood_rounded, const Color(0xFF009688), 'driver_allowance'),
+      (
+        'Fuel (Diesel)',
+        fuelTotal,
+        Icons.local_gas_station_rounded,
+        const Color(0xFFFF9800),
+        'fuel',
+      ),
+      (
+        'Toll & Fastag',
+        tollTotal,
+        Icons.toll_rounded,
+        const Color(0xFF2196F3),
+        'toll',
+      ),
+      (
+        'Maintenance',
+        maintenanceTotal,
+        Icons.build_rounded,
+        const Color(0xFF9C27B0),
+        'maintenance',
+      ),
+      (
+        'Driver Bata',
+        allowanceTotal,
+        Icons.fastfood_rounded,
+        const Color(0xFF009688),
+        'driver_allowance',
+      ),
     ];
 
     return SingleChildScrollView(
@@ -491,21 +572,30 @@ class _FinanceScreenState extends State<FinanceScreen> {
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? (isDark ? const Color(0xFF193F35) : const Color(0xFFEAF5EE))
+                      ? (isDark
+                            ? const Color(0xFF193F35)
+                            : const Color(0xFFEAF5EE))
                       : (isDark ? const Color(0xFF15251F) : Colors.white),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: isSelected
                         ? const Color(0xFF6BDB9C)
-                        : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06)),
+                        : (isDark
+                              ? Colors.white.withValues(alpha: 0.08)
+                              : Colors.black.withValues(alpha: 0.06)),
                     width: isSelected ? 1.5 : 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                      color: Colors.black.withValues(
+                        alpha: isDark ? 0.2 : 0.03,
+                      ),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
@@ -526,7 +616,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        LocalizedText(
                           label,
                           style: TextStyle(
                             fontSize: 10,
@@ -535,12 +625,14 @@ class _FinanceScreenState extends State<FinanceScreen> {
                           ),
                         ),
                         const SizedBox(height: 1),
-                        Text(
+                        LocalizedText(
                           money.format(total),
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
-                            color: isDark ? Colors.white : const Color(0xFF193F35),
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF193F35),
                           ),
                         ),
                       ],
@@ -579,31 +671,39 @@ class _FinanceScreenState extends State<FinanceScreen> {
             color: isDark ? const Color(0xFF15251F) : Colors.white,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.07),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.black.withValues(alpha: 0.07),
             ),
           ),
           child: TextField(
             controller: _searchController,
             onChanged: (val) => setState(() => _searchQuery = val.trim()),
             style: const TextStyle(fontSize: 13),
-            decoration: InputDecoration(
-              hintText: 'Search by category, fuel pump, toll plaza, note...',
-              hintStyle: TextStyle(
-                fontSize: 13,
-                color: isDark ? Colors.white38 : Colors.black38,
+            decoration: localizedDecoration(
+              context,
+              InputDecoration(
+                hintText: 'Search by category, fuel pump, toll plaza, note...',
+                hintStyle: TextStyle(
+                  fontSize: 13,
+                  color: isDark ? Colors.white38 : Colors.black38,
+                ),
+                prefixIcon: const Icon(Icons.search_rounded, size: 18),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear_rounded, size: 16),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
+                    : null,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
               ),
-              prefixIcon: const Icon(Icons.search_rounded, size: 18),
-              suffixIcon: _searchQuery.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear_rounded, size: 16),
-                      onPressed: () {
-                        _searchController.clear();
-                        setState(() => _searchQuery = '');
-                      },
-                    )
-                  : null,
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             ),
           ),
         ),
@@ -625,19 +725,23 @@ class _FinanceScreenState extends State<FinanceScreen> {
                   label: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
+                      LocalizedText(
                         title,
                         style: TextStyle(
                           fontSize: 11,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          fontWeight: isSelected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
                           color: isSelected
                               ? Colors.white
-                              : (isDark ? Colors.white70 : const Color(0xFF193F35)),
+                              : (isDark
+                                    ? Colors.white70
+                                    : const Color(0xFF193F35)),
                         ),
                       ),
                       if (count != null) ...[
                         const SizedBox(width: 5),
-                        Text(
+                        LocalizedText(
                           '($count)',
                           style: TextStyle(
                             fontSize: 10,
@@ -657,7 +761,9 @@ class _FinanceScreenState extends State<FinanceScreen> {
                   side: BorderSide(
                     color: isSelected
                         ? const Color(0xFF6BDB9C).withValues(alpha: 0.5)
-                        : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06)),
+                        : (isDark
+                              ? Colors.white.withValues(alpha: 0.08)
+                              : Colors.black.withValues(alpha: 0.06)),
                   ),
                   onSelected: (_) => setState(() => _selectedFilter = key),
                 ),
@@ -693,9 +799,13 @@ class _FinanceScreenState extends State<FinanceScreen> {
       final date = DateTime.parse(dateKey);
       final now = DateTime.now();
       String headerLabel;
-      if (date.year == now.year && date.month == now.month && date.day == now.day) {
+      if (date.year == now.year &&
+          date.month == now.month &&
+          date.day == now.day) {
         headerLabel = 'Today · ${DateFormat('d MMMM').format(date)}';
-      } else if (date.year == now.year && date.month == now.month && date.day == now.day - 1) {
+      } else if (date.year == now.year &&
+          date.month == now.month &&
+          date.day == now.day - 1) {
         headerLabel = 'Yesterday · ${DateFormat('d MMMM').format(date)}';
       } else {
         headerLabel = DateFormat('EEEE, d MMMM yyyy').format(date);
@@ -704,7 +814,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
       widgets.add(
         Padding(
           padding: const EdgeInsets.only(top: 8, bottom: 6),
-          child: Text(
+          child: LocalizedText(
             headerLabel,
             style: TextStyle(
               fontSize: 12,
@@ -730,7 +840,10 @@ class _FinanceScreenState extends State<FinanceScreen> {
     bool isDark,
   ) {
     final isIncome = entry.type == 'income';
-    final (icon, iconColor, bgBadge) = _getCategoryVisuals(entry.category, isIncome);
+    final (icon, iconColor, bgBadge) = _getCategoryVisuals(
+      entry.category,
+      isIncome,
+    );
     final categoryTitle = _formatCategoryTitle(entry.category);
 
     return Container(
@@ -739,7 +852,9 @@ class _FinanceScreenState extends State<FinanceScreen> {
         color: isDark ? const Color(0xFF15251F) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.07) : Colors.black.withValues(alpha: 0.05),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.07)
+              : Colors.black.withValues(alpha: 0.05),
         ),
         boxShadow: [
           BoxShadow(
@@ -772,31 +887,41 @@ class _FinanceScreenState extends State<FinanceScreen> {
                 Row(
                   children: [
                     Flexible(
-                      child: Text(
+                      child: LocalizedText(
                         categoryTitle,
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: isDark ? Colors.white : const Color(0xFF193F35),
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFF193F35),
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 1.5,
+                      ),
                       decoration: BoxDecoration(
-                        color: (isIncome ? const Color(0xFF2E7D32) : const Color(0xFFE65100))
-                            .withValues(alpha: 0.12),
+                        color:
+                            (isIncome
+                                    ? const Color(0xFF2E7D32)
+                                    : const Color(0xFFE65100))
+                                .withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Text(
+                      child: LocalizedText(
                         isIncome ? 'INCOME' : 'EXPENSE',
                         style: TextStyle(
                           fontSize: 8.5,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.5,
-                          color: isIncome ? const Color(0xFF2E7D32) : const Color(0xFFE65100),
+                          color: isIncome
+                              ? const Color(0xFF2E7D32)
+                              : const Color(0xFFE65100),
                         ),
                       ),
                     ),
@@ -815,7 +940,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
                   ),
                   const SizedBox(height: 2),
                 ],
-                Text(
+                LocalizedText(
                   DateFormat('h:mm a').format(entry.occurredOn),
                   style: TextStyle(
                     fontSize: 11,
@@ -829,14 +954,16 @@ class _FinanceScreenState extends State<FinanceScreen> {
           const SizedBox(width: 10),
 
           // Amount
-          Text(
-            '${isIncome ? '+' : '-'}${money.format(entry.amount)}',
+          LocalizedText(
+            '${localize(context, isIncome ? '+' : '-')}${money.format(entry.amount)}',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w900,
               color: isIncome
                   ? (isDark ? const Color(0xFF6BDB9C) : const Color(0xFF2E7D32))
-                  : (isDark ? const Color(0xFFFFB899) : const Color(0xFFD32F2F)),
+                  : (isDark
+                        ? const Color(0xFFFFB899)
+                        : const Color(0xFFD32F2F)),
             ),
           ),
         ],
@@ -899,7 +1026,9 @@ class _FinanceScreenState extends State<FinanceScreen> {
       case 'driver_allowance':
         return 'Driver Allowance / Bata';
       default:
-        return cat.isEmpty ? 'General' : '${cat[0].toUpperCase()}${cat.substring(1)}';
+        return cat.isEmpty
+            ? 'General'
+            : '${cat[0].toUpperCase()}${cat.substring(1)}';
     }
   }
 
@@ -910,7 +1039,9 @@ class _FinanceScreenState extends State<FinanceScreen> {
         color: isDark ? const Color(0xFF15251F) : Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.black.withValues(alpha: 0.06),
         ),
       ),
       child: Column(
@@ -929,7 +1060,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          Text(
+          LocalizedText(
             'No Ledger Entries Found',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -939,7 +1070,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
             ),
           ),
           const SizedBox(height: 6),
-          Text(
+          LocalizedText(
             'Record freight earnings, diesel receipts, toll debits, and trip expenses to keep your transport accounts organized.',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -960,7 +1091,10 @@ class _FinanceScreenState extends State<FinanceScreen> {
             ),
             onPressed: () => _openAddEntrySheet(context),
             icon: const Icon(Icons.add_rounded, size: 18),
-            label: const Text('Add Entry Now', style: TextStyle(fontWeight: FontWeight.w700)),
+            label: const LocalizedText(
+              'Add Entry Now',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),
@@ -1073,12 +1207,18 @@ class _FinanceFormState extends State<_FinanceForm> {
                     width: 38,
                     height: 38,
                     decoration: BoxDecoration(
-                      color: (isIncome ? const Color(0xFF2E7D32) : AppTheme.orange).withValues(alpha: 0.15),
+                      color:
+                          (isIncome ? const Color(0xFF2E7D32) : AppTheme.orange)
+                              .withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      isIncome ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-                      color: isIncome ? const Color(0xFF2E7D32) : AppTheme.orange,
+                      isIncome
+                          ? Icons.trending_up_rounded
+                          : Icons.trending_down_rounded,
+                      color: isIncome
+                          ? const Color(0xFF2E7D32)
+                          : AppTheme.orange,
                       size: 20,
                     ),
                   ),
@@ -1087,15 +1227,17 @@ class _FinanceFormState extends State<_FinanceForm> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        LocalizedText(
                           'Add Finance Entry',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
-                            color: isDark ? Colors.white : const Color(0xFF193F35),
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF193F35),
                           ),
                         ),
-                        Text(
+                        LocalizedText(
                           'Keep your trip revenue and costs accurate',
                           style: TextStyle(
                             fontSize: 12,
@@ -1116,10 +1258,14 @@ class _FinanceFormState extends State<_FinanceForm> {
               // ─── 1. Segmented Type Selector (Income vs Expense) ────────────
               Container(
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFF0F4F1),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.06)
+                      : const Color(0xFFF0F4F1),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : Colors.black.withValues(alpha: 0.05),
                   ),
                 ),
                 padding: const EdgeInsets.all(4),
@@ -1140,13 +1286,17 @@ class _FinanceFormState extends State<_FinanceForm> {
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
                             color: !isIncome
-                                ? (isDark ? const Color(0xFF332018) : Colors.white)
+                                ? (isDark
+                                      ? const Color(0xFF332018)
+                                      : Colors.white)
                                 : Colors.transparent,
                             borderRadius: BorderRadius.circular(11),
                             boxShadow: !isIncome
                                 ? [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.08),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.08,
+                                      ),
                                       blurRadius: 4,
                                       offset: const Offset(0, 2),
                                     ),
@@ -1159,17 +1309,23 @@ class _FinanceFormState extends State<_FinanceForm> {
                               Icon(
                                 Icons.arrow_upward_rounded,
                                 size: 16,
-                                color: !isIncome ? AppTheme.orange : Colors.grey,
+                                color: !isIncome
+                                    ? AppTheme.orange
+                                    : Colors.grey,
                               ),
                               const SizedBox(width: 6),
-                              Text(
-                                'Fleet Expense',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w800,
-                                  color: !isIncome
-                                      ? AppTheme.orange
-                                      : (isDark ? Colors.white54 : Colors.black54),
+                              Flexible(
+                                child: LocalizedText(
+                                  'Fleet Expense',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    color: !isIncome
+                                        ? AppTheme.orange
+                                        : (isDark
+                                              ? Colors.white54
+                                              : Colors.black54),
+                                  ),
                                 ),
                               ),
                             ],
@@ -1193,13 +1349,17 @@ class _FinanceFormState extends State<_FinanceForm> {
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
                             color: isIncome
-                                ? (isDark ? const Color(0xFF163327) : Colors.white)
+                                ? (isDark
+                                      ? const Color(0xFF163327)
+                                      : Colors.white)
                                 : Colors.transparent,
                             borderRadius: BorderRadius.circular(11),
                             boxShadow: isIncome
                                 ? [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.08),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.08,
+                                      ),
                                       blurRadius: 4,
                                       offset: const Offset(0, 2),
                                     ),
@@ -1212,17 +1372,23 @@ class _FinanceFormState extends State<_FinanceForm> {
                               Icon(
                                 Icons.arrow_downward_rounded,
                                 size: 16,
-                                color: isIncome ? const Color(0xFF2E7D32) : Colors.grey,
+                                color: isIncome
+                                    ? const Color(0xFF2E7D32)
+                                    : Colors.grey,
                               ),
                               const SizedBox(width: 6),
-                              Text(
-                                'Freight Income',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w800,
-                                  color: isIncome
-                                      ? const Color(0xFF2E7D32)
-                                      : (isDark ? Colors.white54 : Colors.black54),
+                              Flexible(
+                                child: LocalizedText(
+                                  'Freight Income',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    color: isIncome
+                                        ? const Color(0xFF2E7D32)
+                                        : (isDark
+                                              ? Colors.white54
+                                              : Colors.black54),
+                                  ),
                                 ),
                               ),
                             ],
@@ -1236,7 +1402,7 @@ class _FinanceFormState extends State<_FinanceForm> {
               const SizedBox(height: 20),
 
               // ─── 2. Visual Category Selector ───────────────────────────────
-              Text(
+              LocalizedText(
                 'CATEGORY',
                 style: TextStyle(
                   fontSize: 11,
@@ -1257,16 +1423,27 @@ class _FinanceFormState extends State<_FinanceForm> {
                     onTap: () => setState(() => category = key),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? (isIncome ? const Color(0xFF193F35) : AppTheme.orange)
-                            : (isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFF0F4F1)),
+                            ? (isIncome
+                                  ? const Color(0xFF193F35)
+                                  : AppTheme.orange)
+                            : (isDark
+                                  ? Colors.white.withValues(alpha: 0.06)
+                                  : const Color(0xFFF0F4F1)),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: isSelected
-                              ? (isIncome ? const Color(0xFF6BDB9C) : Colors.white)
-                              : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black12),
+                              ? (isIncome
+                                    ? const Color(0xFF6BDB9C)
+                                    : Colors.white)
+                              : (isDark
+                                    ? Colors.white.withValues(alpha: 0.08)
+                                    : Colors.black12),
                           width: isSelected ? 1.4 : 1,
                         ),
                       ),
@@ -1281,7 +1458,7 @@ class _FinanceFormState extends State<_FinanceForm> {
                                 : (isDark ? Colors.white70 : Colors.black87),
                           ),
                           const SizedBox(width: 6),
-                          Text(
+                          LocalizedText(
                             label,
                             style: TextStyle(
                               fontSize: 12,
@@ -1300,7 +1477,7 @@ class _FinanceFormState extends State<_FinanceForm> {
               const SizedBox(height: 20),
 
               // ─── 3. Amount Input with Quick Preset Chips ───────────────────
-              Text(
+              LocalizedText(
                 'AMOUNT IN RUPEES (INR)',
                 style: TextStyle(
                   fontSize: 11,
@@ -1314,7 +1491,9 @@ class _FinanceFormState extends State<_FinanceForm> {
                 controller: amount,
                 label: 'Amount in ₹',
                 hint: 'e.g. 4500',
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 validator: (v) => (double.tryParse(v ?? '') ?? 0) <= 0
                     ? 'Enter a valid amount.'
                     : null,
@@ -1336,9 +1515,13 @@ class _FinanceFormState extends State<_FinanceForm> {
                       child: ActionChip(
                         visualDensity: VisualDensity.compact,
                         padding: EdgeInsets.zero,
-                        label: Text('+ $label', style: const TextStyle(fontSize: 11)),
+                        label: LocalizedText(
+                          '+ $label',
+                          style: const TextStyle(fontSize: 11),
+                        ),
                         onPressed: () {
-                          final current = double.tryParse(amount.text.trim()) ?? 0;
+                          final current =
+                              double.tryParse(amount.text.trim()) ?? 0;
                           final next = current + val;
                           setState(() {
                             amount.text = next.toStringAsFixed(0);
@@ -1352,7 +1535,7 @@ class _FinanceFormState extends State<_FinanceForm> {
               const SizedBox(height: 18),
 
               // ─── 4. Note & Description ─────────────────────────────────────
-              Text(
+              LocalizedText(
                 'NOTES & DETAILS (OPTIONAL)',
                 style: TextStyle(
                   fontSize: 11,
@@ -1375,8 +1558,12 @@ class _FinanceFormState extends State<_FinanceForm> {
               // ─── Submit Button ─────────────────────────────────────────────
               BlocBuilder<FinanceCubit, ResourceState<List<FinanceEntryModel>>>(
                 builder: (context, state) => AppButton(
-                  label: isIncome ? 'Record Freight Revenue' : 'Record Fleet Expense',
-                  icon: isIncome ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                  label: isIncome
+                      ? 'Record Freight Revenue'
+                      : 'Record Fleet Expense',
+                  icon: isIncome
+                      ? Icons.trending_up_rounded
+                      : Icons.trending_down_rounded,
                   busy: state.busy,
                   onPressed: () async {
                     if (!form.currentState!.validate()) return;

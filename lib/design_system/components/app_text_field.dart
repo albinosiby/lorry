@@ -1,3 +1,4 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -39,6 +40,7 @@ class _AppTextFieldState extends State<AppTextField> {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 18),
     child: TextFormField(
+      errorBuilder: (context, message) => LocalizedText(message),
       controller: widget.controller,
       validator: widget.validator,
       obscureText: widget.password && hidden,
@@ -53,21 +55,27 @@ class _AppTextFieldState extends State<AppTextField> {
           : TextInputAction.next,
       autocorrect: !widget.password,
       enableSuggestions: !widget.password,
-      decoration: InputDecoration(
-        labelText: widget.label,
-        hintText: widget.hint,
-        prefixText: widget.prefixText,
-        suffixIcon: widget.password
-            ? IconButton(
-                tooltip: hidden ? 'Show password' : 'Hide password',
-                onPressed: () => setState(() => hidden = !hidden),
-                icon: Icon(
-                  hidden
-                      ? Icons.visibility_outlined
-                      : Icons.visibility_off_outlined,
-                ),
-              )
-            : null,
+      decoration: localizedDecoration(
+        context,
+        InputDecoration(
+          labelText: widget.label,
+          hintText: widget.hint,
+          prefixText: widget.prefixText,
+          suffixIcon: widget.password
+              ? IconButton(
+                  tooltip: localize(
+                    context,
+                    hidden ? 'Show password' : 'Hide password',
+                  ),
+                  onPressed: () => setState(() => hidden = !hidden),
+                  icon: Icon(
+                    hidden
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                  ),
+                )
+              : null,
+        ),
       ),
     ),
   );

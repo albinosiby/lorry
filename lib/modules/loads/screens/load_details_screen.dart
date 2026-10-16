@@ -1,3 +1,4 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -18,7 +19,7 @@ class LoadDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Load details')),
+    appBar: AppBar(title: const LocalizedText('Load details')),
     body: PageBody(
       narrow: true,
       onRefresh: () => context.read<LoadDetailsCubit>().load(id),
@@ -101,7 +102,7 @@ class _LoadDetailsContent extends StatelessWidget {
         ),
       ),
       const SizedBox(height: 20),
-      Text(
+      LocalizedText(
         load.hasPickupCoordinates || load.hasDestinationCoordinates
             ? 'Exact location pins are saved with this load.'
             : 'Location pins have not been added to this load.',
@@ -132,7 +133,7 @@ class _LoadHero extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Text(
+              child: LocalizedText(
                 'LOAD LISTING',
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: Theme.of(
@@ -181,7 +182,7 @@ class _LoadHero extends StatelessWidget {
                   ),
                   const SizedBox(width: 7),
                   Expanded(
-                    child: Text(
+                    child: LocalizedText(
                       load.priceLabel,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: Theme.of(context).colorScheme.onPrimary,
@@ -192,7 +193,7 @@ class _LoadHero extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 3),
-              Text(
+              LocalizedText(
                 load.pickupScheduleLabel,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -232,7 +233,7 @@ class _HeroRoutePoint extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            LocalizedText(
               label,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: Theme.of(
@@ -243,7 +244,7 @@ class _HeroRoutePoint extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 2),
-            Text(
+            LocalizedText(
               place,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -310,7 +311,7 @@ class _PrimaryActions extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: () => context.push('/bookings/${load.bookingId}'),
             icon: const Icon(Icons.receipt_long_outlined),
-            label: const Text('View assigned booking'),
+            label: const LocalizedText('View assigned booking'),
           ),
         ],
         if (load.status == 'in_transit' &&
@@ -332,7 +333,7 @@ class _PrimaryActions extends StatelessWidget {
               if (context.mounted) context.read<LoadDetailsCubit>().load(id);
             },
             icon: const Icon(Icons.edit_outlined),
-            label: const Text('Edit listing'),
+            label: const LocalizedText('Edit listing'),
           ),
           TextButton(
             onPressed: busy
@@ -350,7 +351,7 @@ class _PrimaryActions extends StatelessWidget {
                     final cubit = context.read<LoadDetailsCubit>();
                     if (await cubit.cancel(id)) await cubit.load(id);
                   },
-            child: const Text('Cancel listing'),
+            child: const LocalizedText('Cancel listing'),
           ),
         ],
       ],
@@ -447,7 +448,7 @@ class _ActionCard extends StatelessWidget {
               ),
               const SizedBox(width: 9),
               Expanded(
-                child: Text(
+                child: LocalizedText(
                   title,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onPrimaryContainer,
@@ -457,7 +458,7 @@ class _ActionCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 7),
-          Text(
+          LocalizedText(
             message,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Theme.of(context).colorScheme.onPrimaryContainer,
@@ -496,19 +497,19 @@ class _LoadSnapshot extends StatelessWidget {
               width: width,
               icon: Icons.scale_outlined,
               label: 'WEIGHT',
-              value: load.weightLabel,
+              value: localize(context, load.weightLabel),
             ),
             _FactTile(
               width: width,
               icon: Icons.local_shipping_outlined,
               label: 'BODY TYPE',
-              value: load.vehicle,
+              value: localize(context, load.vehicle),
             ),
             _FactTile(
               width: width,
               icon: Icons.straighten_outlined,
               label: 'TRUCK LENGTH',
-              value: load.vehicleLengthLabel,
+              value: localize(context, load.vehicleLengthLabel),
             ),
           ],
         );
@@ -541,7 +542,7 @@ class _FactTile extends StatelessWidget {
       children: [
         Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
         const SizedBox(height: 8),
-        Text(
+        LocalizedText(
           label,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
             letterSpacing: .7,
@@ -588,7 +589,7 @@ class _CompactSection extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
+                child: LocalizedText(
                   title,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
@@ -657,7 +658,7 @@ class _RouteLine extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            LocalizedText(
               label,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -728,12 +729,12 @@ class _InstructionsAndContact extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  LocalizedText(
                     ownerName.isEmpty ? 'Customer details pending' : ownerName,
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   if (ownerPhone.isNotEmpty)
-                    Text(
+                    LocalizedText(
                       ownerPhone,
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
@@ -742,7 +743,7 @@ class _InstructionsAndContact extends StatelessWidget {
             ),
             if (ownerPhone.isNotEmpty)
               IconButton.filledTonal(
-                tooltip: 'Call customer',
+                tooltip: localize(context, 'Call customer'),
                 onPressed: busy
                     ? null
                     : () => context.read<LoadDetailsCubit>().callContact(
@@ -753,7 +754,7 @@ class _InstructionsAndContact extends StatelessWidget {
           ],
         )
       else if (specialNote.trim().isEmpty)
-        Text(
+        LocalizedText(
           'No special instructions or customer contact details are available yet.',
           style: Theme.of(context).textTheme.bodyMedium,
         ),
@@ -779,7 +780,7 @@ class _InfoBlock extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            LocalizedText(
               label,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 letterSpacing: .8,

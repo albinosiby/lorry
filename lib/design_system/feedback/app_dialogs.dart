@@ -1,8 +1,12 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 void showNotice(BuildContext context, String message) =>
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+      SnackBar(
+        content: LocalizedText(message),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
 Future<bool> confirmAction(
   BuildContext context,
@@ -13,16 +17,16 @@ Future<bool> confirmAction(
     await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
+        title: LocalizedText(title),
+        content: LocalizedText(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Go back'),
+            child: const LocalizedText('Go back'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text(confirm),
+            child: LocalizedText(confirm),
           ),
         ],
       ),
@@ -39,24 +43,26 @@ Future<String?> cancellationReason(
   final result = await showDialog<String>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: Text(title),
+      title: LocalizedText(title),
       content: Form(
         key: form,
-        child: TextFormField(
+        child: TextFormField(errorBuilder: (context, message) => LocalizedText(message), 
           controller: controller,
           maxLength: 300,
-          decoration: InputDecoration(
-            labelText: fieldLabel,
-            hintText: 'Tell the other party why',
+          decoration: localizedDecoration(
+            context,
+            InputDecoration(
+              labelText: fieldLabel,
+              hintText: 'Tell the other party why',
+            ),
           ),
-          validator: (v) =>
-              (v?.trim().length ?? 0) < 3 ? 'Please enter a reason.' : null,
+          validator: (v) => (v?.trim().length ?? 0) < 3 ? 'Please enter a reason.' : null,
         ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx),
-          child: const Text('Go back'),
+          child: const LocalizedText('Go back'),
         ),
         FilledButton(
           onPressed: () {
@@ -64,7 +70,7 @@ Future<String?> cancellationReason(
               Navigator.pop(ctx, controller.text.trim());
             }
           },
-          child: Text(confirmLabel),
+          child: LocalizedText(confirmLabel),
         ),
       ],
     ),

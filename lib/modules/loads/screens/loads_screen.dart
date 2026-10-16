@@ -1,3 +1,4 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -88,7 +89,7 @@ class _LoadsScreenState extends State<LoadsScreen> {
             OutlinedButton.icon(
               onPressed: () => context.push('/loads/new'),
               icon: const Icon(Icons.add),
-              label: const Text('Post another load'),
+              label: const LocalizedText('Post another load'),
             ),
             const SizedBox(height: 12),
           ],
@@ -118,7 +119,7 @@ class _LoadsScreenState extends State<LoadsScreen> {
               ),
               onPressed: () => context.push('/requests'),
               icon: const Icon(Icons.pending_actions_outlined),
-              label: const Text('View All Incoming Booking Requests'),
+              label: const LocalizedText('View All Incoming Booking Requests'),
             ),
           ],
           const SizedBox(height: 20),
@@ -140,7 +141,7 @@ class _LoadsScreenState extends State<LoadsScreen> {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        Text(
+                        LocalizedText(
                           widget.mine
                               ? 'Your Postings (${visible.length})'
                               : 'Available Loads (${visible.length})',
@@ -156,7 +157,7 @@ class _LoadsScreenState extends State<LoadsScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         else if (!widget.mine && visible.isNotEmpty)
-                          Text(
+                          LocalizedText(
                             'Real-time rates',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: isDark ? Colors.white60 : Colors.black54,
@@ -205,7 +206,7 @@ class _LoadsScreenState extends State<LoadsScreen> {
                               ? null
                               : () => context.read<LoadsCubit>().more(),
                           icon: const Icon(Icons.expand_more_rounded),
-                          label: const Text('Load More Freight Loads'),
+                          label: const LocalizedText('Load More Freight Loads'),
                         ),
                       ),
                     ],
@@ -288,13 +289,15 @@ class _LoadsScreenState extends State<LoadsScreen> {
                               color: Color(0xFFD5E9A9),
                             ),
                             SizedBox(width: 5),
-                            Text(
-                              'SPOT FREIGHT MARKETPLACE',
-                              style: TextStyle(
-                                color: Color(0xFFD5E9A9),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1.1,
+                            Flexible(
+                              child: LocalizedText(
+                                'SPOT FREIGHT MARKETPLACE',
+                                style: TextStyle(
+                                  color: Color(0xFFD5E9A9),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 1.1,
+                                ),
                               ),
                             ),
                           ],
@@ -314,7 +317,7 @@ class _LoadsScreenState extends State<LoadsScreen> {
                         ),
                         onPressed: openFilters,
                         icon: const Icon(Icons.tune_rounded, size: 15),
-                        label: Text(
+                        label: LocalizedText(
                           _activeFilterCount > 0
                               ? 'Filters ($_activeFilterCount)'
                               : 'Filter Route',
@@ -327,7 +330,7 @@ class _LoadsScreenState extends State<LoadsScreen> {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  const Text(
+                  const LocalizedText(
                     'Available Freight Loads',
                     style: TextStyle(
                       color: Colors.white,
@@ -337,7 +340,7 @@ class _LoadsScreenState extends State<LoadsScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
+                  LocalizedText(
                     'Direct shipper contracts, high-paying return loads & instant spot matches.',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.8),
@@ -427,13 +430,15 @@ class _LoadsScreenState extends State<LoadsScreen> {
           children: [
             Icon(icon, size: 11, color: color ?? const Color(0xFFD5E9A9)),
             const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.65),
-                fontSize: 9,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.5,
+            Flexible(
+              child: LocalizedText(
+                label,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.65),
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                ),
               ),
             ),
           ],
@@ -476,31 +481,34 @@ class _LoadsScreenState extends State<LoadsScreen> {
             child: TextField(
               controller: search,
               onChanged: (value) => setState(() => searchQuery = value.trim()),
-              decoration: InputDecoration(
-                hintText: 'Search city, cargo, or route...',
-                hintStyle: TextStyle(
-                  fontSize: 13,
-                  color: isDark ? Colors.white38 : Colors.black38,
-                ),
-                prefixIcon: const Icon(
-                  Icons.search_rounded,
-                  size: 20,
-                  color: Color(0xFF193F35),
-                ),
-                suffixIcon: searchQuery.isEmpty
-                    ? null
-                    : IconButton(
-                        tooltip: 'Clear search',
-                        onPressed: () {
-                          search.clear();
-                          setState(() => searchQuery = '');
-                        },
-                        icon: const Icon(Icons.close_rounded, size: 18),
-                      ),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 13,
+              decoration: localizedDecoration(
+                context,
+                InputDecoration(
+                  hintText: 'Search city, cargo, or route...',
+                  hintStyle: TextStyle(
+                    fontSize: 13,
+                    color: isDark ? Colors.white38 : Colors.black38,
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.search_rounded,
+                    size: 20,
+                    color: Color(0xFF193F35),
+                  ),
+                  suffixIcon: searchQuery.isEmpty
+                      ? null
+                      : IconButton(
+                          tooltip: localize(context, 'Clear search'),
+                          onPressed: () {
+                            search.clear();
+                            setState(() => searchQuery = '');
+                          },
+                          icon: const Icon(Icons.close_rounded, size: 18),
+                        ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 13,
+                  ),
                 ),
               ),
             ),
@@ -550,7 +558,7 @@ class _LoadsScreenState extends State<LoadsScreen> {
                         color: const Color(0xFFD5E9A9),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Text(
+                      child: LocalizedText(
                         '$_activeFilterCount',
                         style: const TextStyle(
                           fontSize: 10,
@@ -593,7 +601,7 @@ class _LoadsScreenState extends State<LoadsScreen> {
             padding: const EdgeInsets.only(right: 8),
             child: ChoiceChip(
               showCheckmark: false,
-              label: Text(item.$2),
+              label: LocalizedText(item.$2),
               avatar: item.$1 == null
                   ? Icon(
                       Icons.dashboard_outlined,
@@ -696,7 +704,7 @@ class _LoadsScreenState extends State<LoadsScreen> {
     if (filter.maxWeightTonnes != null) {
       tags.add(
         _buildFilterTag(
-          '≤ ${filter.maxWeightTonnes!.toStringAsFixed(0)} t',
+          '≤ ${feetValue(filter.maxWeightTonnes!)} t',
           () => setState(() {
             filter = LoadFilter(
               pickup: filter.pickup,
@@ -715,7 +723,7 @@ class _LoadsScreenState extends State<LoadsScreen> {
     if (filter.minVehicleLengthFt != null) {
       tags.add(
         _buildFilterTag(
-          '≤ ${filter.minVehicleLengthFt!.toStringAsFixed(0)} ft',
+          '≤ ${feetValue(filter.minVehicleLengthFt!)} ft',
           () => setState(() {
             filter = LoadFilter(
               pickup: filter.pickup,
@@ -748,7 +756,7 @@ class _LoadsScreenState extends State<LoadsScreen> {
             setState(() => filter = const LoadFilter());
             refresh();
           },
-          child: const Text(
+          child: const LocalizedText(
             'Clear all',
             style: TextStyle(
               fontSize: 11,
@@ -775,7 +783,7 @@ class _LoadsScreenState extends State<LoadsScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
+          LocalizedText(
             label,
             style: const TextStyle(
               fontSize: 11,
@@ -806,7 +814,9 @@ class _LoadsScreenState extends State<LoadsScreen> {
           [null, 'open', 'assigned', 'in_transit', 'completed', 'cancelled']
               .map(
                 (status) => ChoiceChip(
-                  label: Text(status == null ? 'All' : statusLabel(status)),
+                  label: LocalizedText(
+                    status == null ? 'All' : statusLabel(status),
+                  ),
                   selected: filter.status == status,
                   selectedColor: const Color(0xFF193F35),
                   labelStyle: TextStyle(
@@ -856,7 +866,7 @@ class _LoadsScreenState extends State<LoadsScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          Text(
+          LocalizedText(
             widget.mine
                 ? 'No shipments posted yet'
                 : searchQuery.isNotEmpty
@@ -866,7 +876,7 @@ class _LoadsScreenState extends State<LoadsScreen> {
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 6),
-          Text(
+          LocalizedText(
             widget.mine
                 ? 'Post a freight listing to connect with verified fleet operators.'
                 : 'Try adjusting your route filters, changing vehicle body type, or expanding your weight limits.',
@@ -893,7 +903,7 @@ class _LoadsScreenState extends State<LoadsScreen> {
               ),
               onPressed: () => context.go('/loads/new'),
               icon: const Icon(Icons.add_rounded),
-              label: const Text(
+              label: const LocalizedText(
                 'Post a Load',
                 style: TextStyle(fontWeight: FontWeight.w700),
               ),
@@ -920,7 +930,7 @@ class _LoadsScreenState extends State<LoadsScreen> {
                 refresh();
               },
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text(
+              label: const LocalizedText(
                 'Reset All Filters & Show All',
                 style: TextStyle(fontWeight: FontWeight.w700),
               ),
@@ -1030,7 +1040,7 @@ class _LoadFiltersSheetState extends State<_LoadFiltersSheet> {
                 ),
                 const SizedBox(width: 12),
                 Flexible(
-                  child: Text(
+                  child: LocalizedText(
                     'Route & Truck Filters',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w800,
@@ -1040,7 +1050,7 @@ class _LoadFiltersSheetState extends State<_LoadFiltersSheet> {
               ],
             ),
             const SizedBox(height: 6),
-            Text(
+            LocalizedText(
               'Specify your target pickup hub, return destination, or vehicle capacity.',
               style: TextStyle(
                 fontSize: 12,
@@ -1069,20 +1079,24 @@ class _LoadFiltersSheetState extends State<_LoadFiltersSheet> {
             DropdownButtonFormField<String>(
               initialValue: vehicle,
               isExpanded: true,
-              decoration: InputDecoration(
-                labelText: 'Vehicle Body Type',
-                prefixIcon: const Icon(Icons.category_outlined, size: 20),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
+              decoration: localizedDecoration(
+                context,
+                InputDecoration(
+                  labelText: 'Vehicle Body Type',
+                  prefixIcon: const Icon(Icons.category_outlined, size: 20),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
               items: [
                 const DropdownMenuItem(
                   value: null,
-                  child: Text('Any Vehicle Type'),
+                  child: LocalizedText('Any Vehicle Type'),
                 ),
                 ...vehicleTypes.map(
-                  (item) => DropdownMenuItem(value: item, child: Text(item)),
+                  (item) =>
+                      DropdownMenuItem(value: item, child: LocalizedText(item)),
                 ),
               ],
               onChanged: (value) => setState(() => vehicle = value),
@@ -1092,7 +1106,7 @@ class _LoadFiltersSheetState extends State<_LoadFiltersSheet> {
             // Capacity Field
             AppTextField(
               controller: capacity,
-              label: 'Max Cargo Weight (Tonnes)',
+              label: 'Your truck capacity (tonnes)',
               hint: 'Loads up to this payload weight',
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
@@ -1103,8 +1117,8 @@ class _LoadFiltersSheetState extends State<_LoadFiltersSheet> {
             // Length Field
             AppTextField(
               controller: length,
-              label: 'Minimum Truck Length (ft)',
-              hint: 'Deck length required',
+              label: 'Your truck length (ft)',
+              hint: 'Loads requiring up to this deck length',
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
@@ -1136,7 +1150,7 @@ class _LoadFiltersSheetState extends State<_LoadFiltersSheet> {
                   minVehicleLengthFt: double.tryParse(length.text),
                 ),
               ),
-              child: const Text(
+              child: const LocalizedText(
                 'Apply Route Filters',
                 style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
               ),
@@ -1146,7 +1160,7 @@ class _LoadFiltersSheetState extends State<_LoadFiltersSheet> {
             // Clear Button
             TextButton(
               onPressed: () => Navigator.pop(context, const LoadFilter()),
-              child: const Text('Reset All Filters'),
+              child: const LocalizedText('Reset All Filters'),
             ),
           ],
         ),

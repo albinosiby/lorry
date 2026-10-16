@@ -1,3 +1,4 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../bookings/widgets/trip_directions.dart';
@@ -103,7 +104,7 @@ class HomeScreen extends StatelessWidget {
                           context.push(Routes.driverPostLoad);
                         },
                         icon: const Icon(Icons.add_box_outlined),
-                        label: const Text('Post Load'),
+                        label: const LocalizedText('Post Load'),
                       ),
                       OutlinedButton.icon(
                         onPressed: () {
@@ -111,7 +112,7 @@ class HomeScreen extends StatelessWidget {
                           context.push(Routes.driverPostedLoads);
                         },
                         icon: const Icon(Icons.inventory_2_outlined),
-                        label: const Text('My Posted Loads'),
+                        label: const LocalizedText('My Posted Loads'),
                       ),
                     ],
                   ),
@@ -275,8 +276,8 @@ class HomeScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                '${_timeGreeting()}, $firstName 👋',
+              LocalizedText(
+                '${localize(context, _timeGreeting())}, $firstName 👋',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.headlineMedium?.copyWith(
@@ -288,23 +289,25 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 2),
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: (shipper ? AppTheme.orange : AppTheme.green)
-                          .withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      shipper ? 'CUSTOMER' : 'FLEET DRIVER',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.8,
-                        color: shipper ? AppTheme.orange : AppTheme.green,
+                  Flexible(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: (shipper ? AppTheme.orange : AppTheme.green)
+                            .withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: LocalizedText(
+                        shipper ? 'CUSTOMER' : 'FLEET DRIVER',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.8,
+                          color: shipper ? AppTheme.orange : AppTheme.green,
+                        ),
                       ),
                     ),
                   ),
@@ -312,7 +315,7 @@ class HomeScreen extends StatelessWidget {
                       profile.companyName!.trim().isNotEmpty) ...[
                     const SizedBox(width: 6),
                     Flexible(
-                      child: Text(
+                      child: LocalizedText(
                         '· ${profile.companyName}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -367,7 +370,7 @@ class HomeScreen extends StatelessWidget {
                     minWidth: 18,
                     minHeight: 18,
                   ),
-                  child: Text(
+                  child: LocalizedText(
                     unread > 9 ? '9+' : '$unread',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
@@ -465,7 +468,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Flexible(
-                      child: Text(
+                      child: LocalizedText(
                         available ? 'LIVE GPS ACTIVE' : 'LOCATION REQUIRED',
                         style: TextStyle(
                           fontSize: 10,
@@ -480,7 +483,7 @@ class HomeScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 2),
-                Text(
+                LocalizedText(
                   available
                       ? 'Lat ${location!.latitude!.toStringAsFixed(4)}, Lon ${location.longitude!.toStringAsFixed(4)}'
                       : message,
@@ -521,7 +524,7 @@ class HomeScreen extends StatelessWidget {
                     height: 14,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : Text(
+                : LocalizedText(
                     available
                         ? 'Refresh'
                         : status == DeviceLocationStatus.permissionDeniedForever
@@ -633,7 +636,7 @@ class HomeScreen extends StatelessWidget {
                       child: Icon(tool.icon, color: tool.color, size: 20),
                     ),
                     const SizedBox(height: 8),
-                    Text(
+                    LocalizedText(
                       tool.label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -769,7 +772,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
+                LocalizedText(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -838,8 +841,8 @@ class HomeScreen extends StatelessWidget {
                     spacing: 8,
                     runSpacing: 4,
                     children: [
-                      Text(
-                        '$pending ${shipper ? 'Incoming Requests' : 'Pending Approvals'}',
+                      LocalizedText(
+                        '$pending ${localize(context, shipper ? 'Incoming Requests' : 'Pending Approvals')}',
                         style: const TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 14,
@@ -855,7 +858,7 @@ class HomeScreen extends StatelessWidget {
                           color: const Color(0xFFEA580C),
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: const Text(
+                        child: const LocalizedText(
                           'ACTION REQUIRED',
                           style: TextStyle(
                             color: Colors.white,
@@ -868,7 +871,7 @@ class HomeScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 3),
-                  Text(
+                  LocalizedText(
                     shipper
                         ? 'Drivers have requested to transport your freight. Review bids.'
                         : 'Your bids have been submitted. Track customer responses.',
@@ -912,7 +915,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Text(
+            LocalizedText(
               'CURRENT ONGOING TRIP',
               style: TextStyle(
                 fontSize: 12,
@@ -975,7 +978,7 @@ class HomeScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       trip.load.vehicle,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w800,
@@ -1004,7 +1007,7 @@ class HomeScreen extends StatelessWidget {
                     color: const Color(0xFF2E7D32).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(
+                  child: LocalizedText(
                     '₹${priceValue.toStringAsFixed(0)}',
                     style: const TextStyle(
                       color: Color(0xFF2E7D32),
@@ -1027,13 +1030,13 @@ class HomeScreen extends StatelessWidget {
           const SizedBox(height: 16),
 
           if (trip.deliveryPendingConfirmation) ...[
-            const Text(
+            const LocalizedText(
               'Delivery reported. Awaiting customer confirmation. Record payment in Booking details.',
             ),
             TextButton.icon(
               onPressed: () => context.push('/bookings/${trip.id}'),
               icon: const Icon(Icons.receipt_long_outlined),
-              label: const Text('View delivery details'),
+              label: const LocalizedText('View delivery details'),
             ),
           ] else
             Row(
@@ -1050,7 +1053,7 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                     icon: const Icon(Icons.directions_outlined, size: 20),
-                    label: const Text(
+                    label: const LocalizedText(
                       'View Directions',
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
@@ -1075,7 +1078,7 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                     icon: const Icon(Icons.task_alt_rounded, size: 20),
-                    label: const Text(
+                    label: const LocalizedText(
                       'Report Delivery',
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
@@ -1110,7 +1113,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Text(
+            LocalizedText(
               'LIVE SHIPMENT IN TRANSIT',
               style: TextStyle(
                 fontSize: 12,
@@ -1180,8 +1183,8 @@ class HomeScreen extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    Text(
-                      '${trip.load.vehicle} · Driver: ${trip.driverName}',
+                    LocalizedText(
+                      '${localize(context, trip.load.vehicle)} · Driver: ${trip.driverName}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -1212,7 +1215,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             icon: const Icon(Icons.location_searching_rounded, size: 20),
-            label: Text(
+            label: LocalizedText(
               trip.deliveryPendingConfirmation
                   ? 'Confirm delivery in booking details'
                   : 'Track Load Location',
@@ -1247,7 +1250,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Text(
+            LocalizedText(
               'READY TO DISPATCH',
               style: TextStyle(
                 fontSize: 12,
@@ -1308,7 +1311,7 @@ class HomeScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       trip.load.vehicle,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w800,
@@ -1343,7 +1346,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             icon: const Icon(Icons.play_arrow_rounded, size: 22),
-            label: Text(
+            label: LocalizedText(
               trip.canCollect ? 'Item collected' : 'Start trip',
               style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
             ),
@@ -1356,7 +1359,7 @@ class HomeScreen extends StatelessWidget {
                 ? _openDestinationInGoogleMaps(context, trip)
                 : _openPickupInGoogleMaps(context, trip.load),
             icon: const Icon(Icons.directions_outlined),
-            label: Text(
+            label: LocalizedText(
               trip.itemsCollected
                   ? 'Navigate delivery route'
                   : 'Navigate to pickup',
@@ -1415,96 +1418,93 @@ class HomeScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          shipper
-                              ? 'Your Active Shipments'
-                              : 'Loads Near Your Location',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.3,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: LocalizedText(
+                        shipper
+                            ? 'Your Active Shipments'
+                            : 'Loads Near Your Location',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.3,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      if (!shipper && hasDriverLocation) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
+                    ),
+                    if (!shipper && hasDriverLocation) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(
+                            0xFF2E7D32,
+                          ).withValues(alpha: isDark ? 0.22 : 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
                             color: const Color(
                               0xFF2E7D32,
-                            ).withValues(alpha: isDark ? 0.22 : 0.1),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: const Color(
-                                0xFF2E7D32,
-                              ).withValues(alpha: isDark ? 0.45 : 0.25),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 5,
-                                height: 5,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF2E7D32),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                nearestDistance != null
-                                    ? 'Nearest: ${nearestDistance < 1 ? '< 1 km' : '${nearestDistance.toStringAsFixed(1)} km'}'
-                                    : 'GPS Sorted',
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF2E7D32),
-                                ),
-                              ),
-                            ],
+                            ).withValues(alpha: isDark ? 0.45 : 0.25),
                           ),
                         ),
-                      ],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 5,
+                              height: 5,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF2E7D32),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            LocalizedText(
+                              nearestDistance != null
+                                  ? 'Nearest: ${localize(context, nearestDistance < 1 ? '< 1 km' : '${nearestDistance.toStringAsFixed(1)} km')}'
+                                  : 'GPS Sorted',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF2E7D32),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
+                  ],
+                ),
+                const SizedBox(height: 2),
+                LocalizedText(
+                  shipper
+                      ? 'Recent load postings and incoming vehicle offers'
+                      : (hasDriverLocation
+                            ? 'Prioritized by proximity to your current truck position'
+                            : 'Available freight • Turn on GPS above to sort loads closest to you'),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    shipper
-                        ? 'Recent load postings and incoming vehicle offers'
-                        : (hasDriverLocation
-                              ? 'Prioritized by proximity to your current truck position'
-                              : 'Available freight • Turn on GPS above to sort loads closest to you'),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
+            const SizedBox(height: 4),
             TextButton.icon(
               onPressed: () =>
                   context.go(shipper ? Routes.myLoads : Routes.findLoads),
               iconAlignment: IconAlignment.end,
               icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-              label: const Text(
+              label: const LocalizedText(
                 'View all',
                 style: TextStyle(fontWeight: FontWeight.w700),
               ),
@@ -1525,7 +1525,7 @@ class HomeScreen extends StatelessWidget {
               onPressed: () =>
                   context.go(shipper ? Routes.postLoad : Routes.findLoads),
               icon: Icon(shipper ? Icons.add : Icons.refresh_rounded),
-              label: Text(shipper ? 'Post New Load' : 'Explore Loads'),
+              label: LocalizedText(shipper ? 'Post New Load' : 'Explore Loads'),
             ),
           )
         else
@@ -1574,7 +1574,7 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Flexible(
-              child: Text(
+              child: LocalizedText(
                 'Live status updates • Pull to refresh',
                 style: TextStyle(
                   fontSize: 11,

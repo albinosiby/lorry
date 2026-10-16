@@ -1,3 +1,4 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -78,11 +79,11 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            const LocalizedText(
               'Driver Essentials',
               style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
             ),
-            Text(
+            LocalizedText(
               'Highway roadside services & amenities',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: isDark ? Colors.white60 : Colors.black54,
@@ -93,7 +94,7 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
         ),
         actions: [
           IconButton(
-            tooltip: 'Refresh nearby essentials',
+            tooltip: localize(context, 'Refresh nearby essentials'),
             icon: const Icon(Icons.refresh_rounded),
             onPressed: discover,
           ),
@@ -149,11 +150,11 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
                           discover();
                         },
                         icon: const Icon(Icons.my_location),
-                        label: const Text('Near me'),
+                        label: const LocalizedText('Near me'),
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    const LocalizedText(
                       'Closest first · Approximate straight-line distances',
                     ),
                     const SizedBox(height: 12),
@@ -234,7 +235,7 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
                     ),
                     const SizedBox(width: 6),
                     Expanded(
-                      child: Text(
+                      child: LocalizedText(
                         available
                             ? 'GPS Location Active'
                             : busy
@@ -250,7 +251,7 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(
+                LocalizedText(
                   available
                       ? (model!.locationLabel.isNotEmpty
                             ? model.locationLabel
@@ -268,7 +269,7 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
           ),
           const SizedBox(width: 8),
           IconButton.filledTonal(
-            tooltip: available ? 'Refresh position' : 'Enable GPS',
+            tooltip: localize(context, available ? 'Refresh position' : 'Enable GPS'),
             style: IconButton.styleFrom(
               backgroundColor: primaryColor.withValues(alpha: .15),
               foregroundColor: primaryColor,
@@ -340,7 +341,7 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
             const Icon(Icons.shield_outlined, size: 16, color: Colors.red),
             const SizedBox(width: 6),
             Expanded(
-              child: Text(
+              child: LocalizedText(
                 'Highway Emergency Helplines (Toll-Free)',
                 style: theme.textTheme.labelMedium?.copyWith(
                   fontWeight: FontWeight.w700,
@@ -375,7 +376,7 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
                       children: [
                         Icon(item.icon, size: 18, color: item.color),
                         const SizedBox(height: 3),
-                        Text(
+                        LocalizedText(
                           item.label,
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
@@ -383,7 +384,7 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
                             color: item.color,
                           ),
                         ),
-                        Text(
+                        LocalizedText(
                           item.title,
                           style: TextStyle(
                             fontSize: 10,
@@ -461,7 +462,7 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
                     child: Icon(_icon(cat), color: color, size: 20),
                   ),
                   const SizedBox(height: 6),
-                  Text(
+                  LocalizedText(
                     cat?.label ?? 'All Services',
                     textAlign: TextAlign.center,
                     maxLines: 2,
@@ -500,13 +501,13 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
         debounce?.cancel();
         discover();
       },
-      decoration: InputDecoration(
+      decoration: localizedDecoration(context, InputDecoration(
         hintText: 'Search petrol pump, mechanic, puncture, dhaba…',
         prefixIcon: const Icon(Icons.search_rounded),
         suffixIcon: search.text.isEmpty
             ? null
             : IconButton(
-                tooltip: 'Clear search',
+                tooltip: localize(context, 'Clear search'),
                 icon: const Icon(Icons.close_rounded),
                 onPressed: () {
                   debounce?.cancel();
@@ -520,7 +521,7 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
           horizontal: 16,
           vertical: 12,
         ),
-      ),
+      )),
     );
   }
 
@@ -545,7 +546,7 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
               Icon(_icon(category), color: _categoryColor(category)),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
+                child: LocalizedText(
                   category.label,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
@@ -584,21 +585,21 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
               children: [
                 const Icon(Icons.cloud_off_outlined, size: 18),
                 const SizedBox(width: 8),
-                const Expanded(child: Text('Could not load this category.')),
+                const Expanded(child: LocalizedText('Could not load this category.')),
                 TextButton(
                   onPressed: context.read<NearbyServicesCubit>().state.busy
                       ? null
                       : () => context.read<NearbyServicesCubit>().retryCategory(
                           category,
                         ),
-                  child: const Text('Retry'),
+                  child: const LocalizedText('Retry'),
                 ),
               ],
             )
           else if (items.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 18),
-              child: Text(
+              child: LocalizedText(
                 loading
                     ? 'Finding nearby services…'
                     : 'No services found within ${model.categoryRadii[category] ?? 50} km.',
@@ -635,7 +636,7 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            Text(
+            LocalizedText(
               [
                 if (item.distanceKm != null)
                   '${item.distanceKm!.toStringAsFixed(1)} km',
@@ -649,14 +650,14 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
             ],
             if (item.openNow != null) ...[
               const SizedBox(height: 6),
-              Text(
+              LocalizedText(
                 item.openNow! ? 'Open now' : 'Closed now',
                 style: TextStyle(
                   color: item.openNow! ? Colors.green : theme.colorScheme.error,
                 ),
               ),
             ],
-            if (item.truckFriendly) const Text('Truck access mapped'),
+            if (item.truckFriendly) const LocalizedText('Truck access mapped'),
             const Spacer(),
             Row(
               children: [
@@ -666,7 +667,7 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
                       onPressed: () =>
                           _callNumber(item.phone.split(RegExp(r'[;,]')).first),
                       icon: const Icon(Icons.call_outlined, size: 17),
-                      label: const Text('Call'),
+                      label: const LocalizedText('Call'),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -683,7 +684,7 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
                       }),
                     ),
                     icon: const Icon(Icons.navigation_outlined, size: 17),
-                    label: const Text('Navigate'),
+                    label: const LocalizedText('Navigate'),
                   ),
                 ),
               ],
@@ -699,7 +700,7 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
                 ),
                 child: Padding(
                   padding: const EdgeInsets.only(top: 6),
-                  child: Text(
+                  child: LocalizedText(
                     item.provider == 'google'
                         ? 'Google Maps'
                         : '© OpenStreetMap contributors',
@@ -709,7 +710,7 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
               ),
             for (final attribution in item.attributions)
               if ((attribution['displayName']?.toString() ?? '').isNotEmpty)
-                Text(
+                LocalizedText(
                   attribution['displayName'].toString(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

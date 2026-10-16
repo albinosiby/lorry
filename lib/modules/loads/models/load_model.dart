@@ -11,6 +11,24 @@ const vehicleTypes = [
   'Refrigerated',
 ];
 const vehicleLengthOptions = ['10', '12', '14', '16', '20', '22', '24', '32'];
+
+/// General cargo classes are interchangeable only when payload and deck fit.
+/// Specialised bodies must still match the load's explicit requirement.
+bool vehicleTypeFitsLoad(
+  String truckType,
+  String bodyType,
+  String requiredType,
+) {
+  String normalize(String value) => value.trim().toLowerCase();
+  const general = {'mini truck', 'pickup', 'lcv', 'open truck'};
+  final required = normalize(requiredType);
+  final types = {normalize(truckType), normalize(bodyType)};
+  return types.contains(required) ||
+      (general.contains(required) && types.any(general.contains));
+}
+
+String feetValue(double value) =>
+    value.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
 String statusLabel(String value) => switch (value) {
   'in_transit' => 'In transit',
   'delivery_reported' => 'Delivery reported',
@@ -83,7 +101,7 @@ class LoadModel extends Equatable {
       '${weightTonnes.toStringAsFixed(weightTonnes.truncateToDouble() == weightTonnes ? 0 : 1)} t';
   String get vehicleLengthLabel => requiredVehicleLengthFt == null
       ? 'Any length'
-      : '${requiredVehicleLengthFt!.toStringAsFixed(requiredVehicleLengthFt!.truncateToDouble() == requiredVehicleLengthFt ? 0 : 1)} ft';
+      : '${feetValue(requiredVehicleLengthFt!)} ft';
   bool get hasPickupCoordinates =>
       pickupLatitude != null && pickupLongitude != null;
   bool get hasDestinationCoordinates =>
@@ -209,7 +227,8 @@ class LoadFilter extends Equatable {
   /// but this keeps the driver marketplace correct when a legacy response or
   /// cached page contains a load outside the selected truck limits.
   bool matchesTruckFit(LoadModel load) =>
-      (vehicle == null || load.vehicle == vehicle) &&
+      (vehicle == null ||
+          vehicleTypeFitsLoad(vehicle!, vehicle!, load.vehicle)) &&
       (maxWeightTonnes == null || load.weightTonnes <= maxWeightTonnes!) &&
       (minVehicleLengthFt == null ||
           (load.requiredVehicleLengthFt ?? 0) <= minVehicleLengthFt!);

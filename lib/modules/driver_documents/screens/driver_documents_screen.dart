@@ -1,3 +1,4 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -23,14 +24,14 @@ class DriverDocumentsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: Text(
+      title: LocalizedText(
         identityOnly ? 'Driver identity documents' : 'Driver documents',
       ),
     ),
     floatingActionButton: FloatingActionButton.extended(
       onPressed: () => _upload(context),
       icon: const Icon(Icons.upload_file_outlined),
-      label: const Text('Upload document'),
+      label: const LocalizedText('Upload document'),
     ),
     body: PageBody(
       narrow: true,
@@ -106,10 +107,12 @@ class DriverDocumentsScreen extends StatelessWidget {
               ? Icons.warning_amber_outlined
               : Icons.verified_user_outlined,
         ),
-        title: Text('$verified document${verified == 1 ? '' : 's'} verified'),
-        subtitle: Text(
+        title: LocalizedText(
+          '$verified document${localize(context, verified == 1 ? '' : 's')} verified',
+        ),
+        subtitle: LocalizedText(
           expiring > 0
-              ? '$expiring document${expiring == 1 ? '' : 's'} need attention before your next trip.'
+              ? '$expiring document${localize(context, expiring == 1 ? '' : 's')} need attention before your next trip.'
               : 'Review status is updated by the LORRY LINK verification team.',
         ),
       ),
@@ -135,8 +138,8 @@ class DriverDocumentsScreen extends StatelessWidget {
                 : Icons.description_outlined,
           ),
         ),
-        title: Text(document.type.label),
-        subtitle: Text(
+        title: LocalizedText(document.type.label),
+        subtitle: LocalizedText(
           document.status == 'rejected'
               ? document.rejectionReason ??
                     'Please upload a clearer replacement.'
@@ -149,7 +152,7 @@ class DriverDocumentsScreen extends StatelessWidget {
           children: [
             StatusBadge(document.status),
             IconButton(
-              tooltip: 'View document',
+              tooltip: localize(context, 'View document'),
               onPressed: () => _view(context, document),
               icon: const Icon(Icons.visibility_outlined),
             ),
@@ -206,7 +209,7 @@ class DriverDocumentsScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
+                LocalizedText(
                   document.type.label,
                   style: Theme.of(sheet).textTheme.titleMedium,
                 ),
@@ -225,7 +228,7 @@ class DriverDocumentsScreen extends StatelessWidget {
                             fit: BoxFit.contain,
                             errorBuilder: (_, _, _) => const Padding(
                               padding: EdgeInsets.all(24),
-                              child: Text(
+                              child: LocalizedText(
                                 'Unable to load this document image.',
                                 textAlign: TextAlign.center,
                               ),
@@ -313,18 +316,23 @@ class _UploadDocumentFormState extends State<_UploadDocumentForm> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
+          LocalizedText(
             'Upload document',
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 20),
           DropdownButtonFormField<DriverDocumentType>(
             initialValue: type,
-            decoration: const InputDecoration(labelText: 'Document type'),
+            decoration: localizedDecoration(
+              context,
+              InputDecoration(labelText: 'Document type'),
+            ),
             items: widget.allowedTypes
                 .map(
-                  (item) =>
-                      DropdownMenuItem(value: item, child: Text(item.label)),
+                  (item) => DropdownMenuItem(
+                    value: item,
+                    child: LocalizedText(item.label),
+                  ),
                 )
                 .toList(),
             onChanged: (value) => setState(() {
@@ -336,7 +344,10 @@ class _UploadDocumentFormState extends State<_UploadDocumentForm> {
             const SizedBox(height: 18),
             DropdownButtonFormField<String>(
               initialValue: vehicleId,
-              decoration: const InputDecoration(labelText: 'Truck'),
+              decoration: localizedDecoration(
+                context,
+                InputDecoration(labelText: 'Truck'),
+              ),
               items: widget.vehicles
                   .map(
                     (truck) => DropdownMenuItem(
@@ -350,14 +361,16 @@ class _UploadDocumentFormState extends State<_UploadDocumentForm> {
             if (widget.vehicles.isEmpty)
               const Padding(
                 padding: EdgeInsets.only(top: 8),
-                child: Text('Add this truck before uploading its document.'),
+                child: LocalizedText(
+                  'Add this truck before uploading its document.',
+                ),
               ),
           ],
           const SizedBox(height: 18),
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.event_outlined),
-            title: Text(
+            title: LocalizedText(
               expiresOn == null
                   ? 'Expiry date (optional)'
                   : 'Expires ${DateFormat('d MMM yyyy').format(expiresOn!)}',
@@ -387,7 +400,7 @@ class _UploadDocumentFormState extends State<_UploadDocumentForm> {
             ),
           ),
           const SizedBox(height: 10),
-          const Text(
+          const LocalizedText(
             'Accepted: JPG, PNG or PDF · Maximum file size 8 MB',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 12),

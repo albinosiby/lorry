@@ -1,3 +1,4 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -115,7 +116,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
+              LocalizedText(
                 'Upload $title',
                 style: Theme.of(
                   sheetContext,
@@ -124,7 +125,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               const SizedBox(height: 16),
               ListTile(
                 leading: const Icon(Icons.camera_alt_outlined),
-                title: const Text('Take photo with camera'),
+                title: const LocalizedText('Take photo with camera'),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -148,7 +149,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               const SizedBox(height: 8),
               ListTile(
                 leading: const Icon(Icons.photo_library_outlined),
-                title: const Text('Choose from gallery or files'),
+                title: const LocalizedText('Choose from gallery or files'),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -404,18 +405,18 @@ class _ProfileScreenState extends State<ProfileScreen>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
+              LocalizedText(
                 'Profile photo',
                 style: Theme.of(sheet).textTheme.titleLarge,
               ),
               ListTile(
                 leading: const Icon(Icons.camera_alt_outlined),
-                title: const Text('Take a photo'),
+                title: const LocalizedText('Take a photo'),
                 onTap: () => Navigator.pop(sheet, ImageSource.camera),
               ),
               ListTile(
                 leading: const Icon(Icons.photo_library_outlined),
-                title: const Text('Choose from gallery'),
+                title: const LocalizedText('Choose from gallery'),
                 onTap: () => Navigator.pop(sheet, ImageSource.gallery),
               ),
             ],
@@ -477,7 +478,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ],
                     const SizedBox(height: 12),
                     const Divider(),
-                    const Text(
+                    const LocalizedText(
                       'LORRY LINK · Version 1.0.0',
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 12),
@@ -614,7 +615,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           : hasPhoto
                           ? null
                           : Center(
-                              child: Text(
+                              child: LocalizedText(
                                 initials,
                                 style: const TextStyle(
                                   color: Colors.white,
@@ -663,7 +664,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                       children: [
                         Flexible(
                           child: Text(
-                            name.text.isEmpty ? 'Your name' : name.text,
+                            name.text.isEmpty
+                                ? localize(context, 'Your name')
+                                : name.text,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 20,
@@ -675,9 +678,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                         ),
                         const SizedBox(width: 6),
                         Tooltip(
-                          message: isShipper
-                              ? 'Verified Customer Account'
-                              : 'Verified Driver Account',
+                          message: localize(
+                            context,
+                            isShipper
+                                ? 'Verified Customer Account'
+                                : 'Verified Driver Account',
+                          ),
                           child: const Icon(
                             Icons.verified,
                             color: Color(0xFF6BDB9C),
@@ -705,7 +711,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         children: [
                           Icon(roleIcon, size: 13, color: badgeTextColor),
                           const SizedBox(width: 5),
-                          Text(
+                          LocalizedText(
                             roleLabel,
                             style: TextStyle(
                               color: badgeTextColor,
@@ -728,7 +734,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           ),
                           const SizedBox(width: 5),
                           Flexible(
-                            child: Text(
+                            child: LocalizedText(
                               model.profile!.companyName!,
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: .65),
@@ -778,7 +784,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           Icon(icon, size: 14, color: c),
           const SizedBox(width: 6),
           Flexible(
-            child: Text(
+            child: LocalizedText(
               text,
               style: TextStyle(
                 color: c,
@@ -837,7 +843,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      LocalizedText(
                         'Edit profile details',
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
@@ -845,7 +851,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           color: cs.onSurface,
                         ),
                       ),
-                      Text(
+                      LocalizedText(
                         'Name, phone, address, company',
                         style: TextStyle(
                           fontSize: 12,
@@ -889,7 +895,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   InfoRow(
                     Icons.badge_outlined,
                     'Primary role',
-                    model.profile?.role.label ?? '',
+                    localize(context, model.profile?.role.label ?? ''),
                   ),
                   const SizedBox(height: 12),
                   AppButton(
@@ -1000,9 +1006,16 @@ class _ProfileScreenState extends State<ProfileScreen>
       icon: Icons.help_outline_rounded,
       children: [
         _ActionTile(
+          icon: Icons.settings_outlined,
+          iconColor: const Color(0xFF607D8B),
+          title: 'Settings',
+          subtitle: 'Change your app language.',
+          onTap: () => context.push('/profile/settings'),
+        ),
+        _ActionTile(
           icon: Icons.gavel_outlined,
           iconColor: const Color(0xFF607D8B),
-          title: 'Terms & privacy',
+          title: 'Terms & Conditions',
           subtitle: 'Booking, location and verification terms.',
           onTap: () => context.push('/profile/terms'),
         ),
@@ -1047,7 +1060,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 }
               },
         icon: const Icon(Icons.logout, size: 18),
-        label: const Text('Sign out'),
+        label: const LocalizedText('Sign out'),
       ),
     );
   }
@@ -1106,7 +1119,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       isCustomer
                           ? 'Getting trucks for your load'
                           : 'Getting load for your truck',
@@ -1115,7 +1128,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         fontSize: 14,
                       ),
                     ),
-                    Text(
+                    LocalizedText(
                       isCustomer
                           ? 'Customer / Shipper Account'
                           : 'Transporter / Driver Account',
@@ -1133,7 +1146,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         const SizedBox(height: 20),
 
         // 1. Personal & Contact Details
-        Text(
+        LocalizedText(
           'Personal Information',
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w800,
@@ -1184,7 +1197,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         const SizedBox(height: 8),
 
         // Gender Selector
-        Text(
+        LocalizedText(
           'Gender',
           style: theme.textTheme.labelMedium?.copyWith(
             fontWeight: FontWeight.w700,
@@ -1199,7 +1212,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             return Padding(
               padding: const EdgeInsets.only(right: 10),
               child: ChoiceChip(
-                label: Text(g),
+                label: LocalizedText(g),
                 selected: selected,
                 avatar: Icon(
                   g == 'Male'
@@ -1218,7 +1231,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
         // 2. Documents Section
         if (isCustomer) ...[
-          Text(
+          LocalizedText(
             'Verification Document',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w800,
@@ -1226,7 +1239,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           ),
           const SizedBox(height: 4),
-          Text(
+          LocalizedText(
             'Upload your Aadhaar card image to verify your customer account.',
             style: theme.textTheme.bodySmall?.copyWith(
               color: isDark ? Colors.white70 : Colors.black54,
@@ -1248,7 +1261,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           ),
         ] else ...[
-          Text(
+          LocalizedText(
             'Required Driver Documents',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w800,
@@ -1256,7 +1269,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           ),
           const SizedBox(height: 4),
-          Text(
+          LocalizedText(
             'Aadhaar card and Driving Licence are mandatory to start driving sessions.',
             style: theme.textTheme.bodySmall?.copyWith(
               color: isDark ? Colors.white70 : Colors.black54,
@@ -1374,7 +1387,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 Row(
                   children: [
                     Flexible(
-                      child: Text(
+                      child: LocalizedText(
                         title,
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
@@ -1395,7 +1408,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             : Colors.orange.withValues(alpha: .15),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Text(
+                      child: LocalizedText(
                         hasDoc ? 'Attached' : 'Required',
                         style: TextStyle(
                           color: hasDoc ? Colors.green : Colors.orange.shade800,
@@ -1407,7 +1420,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(
+                LocalizedText(
                   hasDoc ? (filename ?? 'File attached') : subtitle,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: isDark ? Colors.white70 : Colors.black54,
@@ -1426,7 +1439,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            child: Text(hasDoc ? 'Change' : 'Upload'),
+            child: LocalizedText(hasDoc ? 'Change' : 'Upload'),
           ),
         ],
       ),
@@ -1474,7 +1487,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           validator: Validators.required,
         ),
         const SizedBox(height: 8),
-        Text(
+        LocalizedText(
           'Gender',
           style: Theme.of(
             context,
@@ -1487,7 +1500,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             return Padding(
               padding: const EdgeInsets.only(right: 8),
               child: ChoiceChip(
-                label: Text(g),
+                label: LocalizedText(g),
                 selected: gender == g,
                 onSelected: (_) => setState(() => gender = g),
               ),
@@ -1530,13 +1543,15 @@ class _SectionGroup extends StatelessWidget {
             children: [
               Icon(icon, size: 15, color: cs.primary),
               const SizedBox(width: 7),
-              Text(
-                label.toUpperCase(),
-                style: TextStyle(
-                  color: cs.primary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.4,
+              Flexible(
+                child: LocalizedText(
+                  label.toUpperCase(),
+                  style: TextStyle(
+                    color: cs.primary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.4,
+                  ),
                 ),
               ),
             ],
@@ -1601,7 +1616,7 @@ class _ActionTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      LocalizedText(
                         title,
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
@@ -1609,7 +1624,7 @@ class _ActionTile extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(
+                      LocalizedText(
                         subtitle,
                         style: TextStyle(
                           fontSize: 12,

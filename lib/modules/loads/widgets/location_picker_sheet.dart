@@ -1,3 +1,4 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -145,7 +146,8 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
           selectedPlaceName = first.label;
           mapController.move(point, 15);
         } else if (found.isEmpty && autoSelectFirst) {
-          searchError = 'No exact location found for "$term". Please pick on map.';
+          searchError =
+              'No exact location found for "$term". Please pick on map.';
         }
       });
     } catch (error) {
@@ -181,9 +183,12 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(widget.title, style: Theme.of(context).textTheme.titleLarge),
+              LocalizedText(
+                widget.title,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
               const SizedBox(height: 4),
-              Text(
+              LocalizedText(
                 'Move or tap the map to mark the exact place. The place name you entered will be kept.',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
@@ -192,29 +197,36 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
                 controller: query,
                 textInputAction: TextInputAction.search,
                 onChanged: _scheduleSearch,
-                onSubmitted: (_) => _search(hideKeyboard: true, autoSelectFirst: true),
-                decoration: InputDecoration(
-                  labelText: 'Search a city, town, landmark or address',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: searching
-                      ? const Padding(
-                          padding: EdgeInsets.all(14),
-                          child: SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                onSubmitted: (_) =>
+                    _search(hideKeyboard: true, autoSelectFirst: true),
+                decoration: localizedDecoration(
+                  context,
+                  InputDecoration(
+                    labelText: 'Search a city, town, landmark or address',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: searching
+                        ? const Padding(
+                            padding: EdgeInsets.all(14),
+                            child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        : IconButton(
+                            tooltip: localize(context, 'Search place'),
+                            onPressed: () => _search(
+                              hideKeyboard: true,
+                              autoSelectFirst: true,
+                            ),
+                            icon: const Icon(Icons.arrow_forward),
                           ),
-                        )
-                      : IconButton(
-                          tooltip: 'Search place',
-                          onPressed: () => _search(hideKeyboard: true, autoSelectFirst: true),
-                          icon: const Icon(Icons.arrow_forward),
-                        ),
+                  ),
                 ),
               ),
               if (searchError != null) ...[
                 const SizedBox(height: 6),
-                Text(
+                LocalizedText(
                   searchError!,
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
@@ -235,7 +247,7 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
                           dense: true,
                           leading: const Icon(Icons.place_outlined),
                           title: Text(result.label),
-                          subtitle: Text(
+                          subtitle: LocalizedText(
                             '${result.latitude.toStringAsFixed(5)}, ${result.longitude.toStringAsFixed(5)}',
                           ),
                           onTap: () => _selectResult(result),
@@ -267,7 +279,8 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
                         children: [
                           TileLayer(
                             urlTemplate: AppConfig.mapTileUrl,
-                            userAgentPackageName: AppConfig.androidApplicationId,
+                            userAgentPackageName:
+                                AppConfig.androidApplicationId,
                           ),
                           MarkerLayer(
                             markers: [
@@ -298,7 +311,7 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
                               horizontal: 6,
                               vertical: 3,
                             ),
-                            child: Text(
+                            child: LocalizedText(
                               '© OpenStreetMap',
                               style: TextStyle(fontSize: 10),
                             ),
@@ -310,7 +323,7 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
                 ),
               ),
               const SizedBox(height: 12),
-              Text(
+              LocalizedText(
                 '${selected.latitude.toStringAsFixed(6)}, ${selected.longitude.toStringAsFixed(6)}',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall,
@@ -326,7 +339,7 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
                   ),
                 ),
                 icon: const Icon(Icons.check),
-                label: const Text('Use this map location'),
+                label: const LocalizedText('Use this map location'),
               ),
             ],
           ),

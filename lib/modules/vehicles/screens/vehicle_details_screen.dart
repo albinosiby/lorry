@@ -1,3 +1,4 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -14,6 +15,7 @@ import '../../driver_documents/models/driver_documents_screen_model.dart';
 import '../cubit/vehicles_cubit.dart';
 import '../models/vehicle_model.dart';
 import 'vehicles_screen.dart';
+import '../../loads/models/load_model.dart';
 
 class VehicleDetailsScreen extends StatelessWidget {
   const VehicleDetailsScreen({super.key, required this.vehicleId});
@@ -30,7 +32,7 @@ class VehicleDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: const Text('Truck details'),
+      title: const LocalizedText('Truck details'),
       actions: [
         BlocBuilder<VehiclesCubit, ResourceState<List<VehicleModel>>>(
           builder: (context, vehicleState) {
@@ -41,7 +43,7 @@ class VehicleDetailsScreen extends StatelessWidget {
             return TextButton.icon(
               onPressed: () => _editTruck(context, truck),
               icon: const Icon(Icons.edit_outlined, size: 18),
-              label: const Text('Edit'),
+              label: const LocalizedText('Edit'),
             );
           },
         ),
@@ -97,7 +99,7 @@ class VehicleDetailsScreen extends StatelessWidget {
                                 context.read<DriverDocumentsCubit>().load(),
                               ]);
                             },
-                            child: const Text('Try again'),
+                            child: const LocalizedText('Try again'),
                           ),
                         );
                       }
@@ -181,14 +183,14 @@ class _TruckContent extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                LocalizedText(
                   'Truck Documents',
                   style: Theme.of(
                     context,
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 2),
-                Text(
+                LocalizedText(
                   'Upload both sides or extra pages as needed.',
                   style: TextStyle(
                     fontSize: 12,
@@ -207,7 +209,7 @@ class _TruckContent extends StatelessWidget {
                         .withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Text(
+              child: LocalizedText(
                 '$uploadedTypesCount / 4 VERIFIED',
                 style: TextStyle(
                   fontSize: 11,
@@ -314,7 +316,7 @@ class _TruckContent extends StatelessWidget {
                             ).withValues(alpha: 0.35),
                           ),
                         ),
-                        child: Text(
+                        child: LocalizedText(
                           'REGISTERED FLEET TRUCK',
                           style: const TextStyle(
                             color: Color(0xFFD5E9A9),
@@ -337,7 +339,7 @@ class _TruckContent extends StatelessWidget {
                               color: AppTheme.orange.withValues(alpha: 0.5),
                             ),
                           ),
-                          child: const Text(
+                          child: const LocalizedText(
                             '★ PRIMARY TRUCK',
                             style: TextStyle(
                               color: Color(0xFFFFB899),
@@ -391,7 +393,7 @@ class _TruckContent extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 1),
-                            const Text(
+                            const LocalizedText(
                               'IND',
                               style: TextStyle(
                                 color: Color(0xFF0038A8),
@@ -404,7 +406,7 @@ class _TruckContent extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         // Number
-                        Text(
+                        LocalizedText(
                           truck.registrationNumber.toUpperCase(),
                           style: const TextStyle(
                             color: Color(0xFF111111),
@@ -420,8 +422,8 @@ class _TruckContent extends StatelessWidget {
                   const SizedBox(height: 12),
 
                   // Truck Subtitle
-                  Text(
-                    '${truck.vehicleType} • ${truck.bodyType}',
+                  LocalizedText(
+                    '${localize(context, truck.vehicleType)} • ${localize(context, truck.bodyType)}',
                     style: const TextStyle(
                       color: Color(0xFFE0EFE8),
                       fontSize: 14,
@@ -447,7 +449,7 @@ class _TruckContent extends StatelessWidget {
       (
         icon: Icons.straighten_rounded,
         label: 'Cargo Length',
-        value: '${truck.lengthFt.toStringAsFixed(0)} ft',
+        value: '${feetValue(truck.lengthFt)} ft',
         color: AppTheme.green,
       ),
       (
@@ -503,7 +505,7 @@ class _TruckContent extends StatelessWidget {
                     child: Icon(spec.icon, color: spec.color, size: 16),
                   ),
                   const SizedBox(height: 8),
-                  Text(
+                  LocalizedText(
                     spec.value,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -513,7 +515,7 @@ class _TruckContent extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
+                  LocalizedText(
                     spec.label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -560,7 +562,7 @@ class _TruckContent extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
+            child: LocalizedText(
               ready
                   ? 'All 4 vehicle documents uploaded and active for verified load allocation.'
                   : '$count of 4 documents uploaded. Add remaining papers to unlock instant customer booking.',
@@ -649,7 +651,7 @@ class _DocumentGroupState extends State<_DocumentGroup> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       widget.type.label,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w800,
@@ -657,11 +659,11 @@ class _DocumentGroupState extends State<_DocumentGroup> {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
+                    LocalizedText(
                       _isUploading
                           ? (_uploadStatusText ?? 'Uploading document…')
                           : (hasDocuments
-                                ? '${widget.documents.length} file${widget.documents.length == 1 ? '' : 's'} recorded'
+                                ? '${widget.documents.length} file${localize(context, widget.documents.length == 1 ? '' : 's')} recorded'
                                 : 'Missing — add document'),
                       style: TextStyle(
                         fontSize: 12,
@@ -697,7 +699,7 @@ class _DocumentGroupState extends State<_DocumentGroup> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       ),
                       const SizedBox(width: 8),
-                      Text(
+                      LocalizedText(
                         'Uploading…',
                         style: TextStyle(
                           color: AppTheme.green,
@@ -721,7 +723,7 @@ class _DocumentGroupState extends State<_DocumentGroup> {
                   ),
                   onPressed: () => _chooseAndUpload(context),
                   icon: const Icon(Icons.add_a_photo_outlined, size: 16),
-                  label: Text(hasDocuments ? 'Add more' : 'Upload'),
+                  label: LocalizedText(hasDocuments ? 'Add more' : 'Upload'),
                 ),
             ],
           ),
@@ -760,7 +762,7 @@ class _DocumentGroupState extends State<_DocumentGroup> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        LocalizedText(
                           'Added ${DateFormat('d MMM yyyy, h:mm a').format(document.createdAt)}',
                           style: const TextStyle(
                             fontSize: 11,
@@ -768,7 +770,7 @@ class _DocumentGroupState extends State<_DocumentGroup> {
                           ),
                         ),
                         if (document.expiresOn != null)
-                          Text(
+                          LocalizedText(
                             'Expires ${DateFormat('d MMM yyyy').format(document.expiresOn!)}',
                             style: TextStyle(
                               fontSize: 10,
@@ -785,7 +787,10 @@ class _DocumentGroupState extends State<_DocumentGroup> {
                     ),
                     onPressed: () => _view(context, document),
                     icon: const Icon(Icons.visibility_outlined, size: 15),
-                    label: const Text('View', style: TextStyle(fontSize: 12)),
+                    label: const LocalizedText(
+                      'View',
+                      style: TextStyle(fontSize: 12),
+                    ),
                   ),
                 ],
               ),
@@ -810,14 +815,14 @@ class _DocumentGroupState extends State<_DocumentGroup> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
+              LocalizedText(
                 widget.type.label,
                 style: Theme.of(
                   sheet,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 6),
-              const Text(
+              const LocalizedText(
                 'Add a photo from your camera, pick an image from gallery, or select a PDF document file.',
               ),
               const SizedBox(height: 16),
@@ -826,8 +831,10 @@ class _DocumentGroupState extends State<_DocumentGroup> {
                 leading: const CircleAvatar(
                   child: Icon(Icons.upload_file_outlined),
                 ),
-                title: const Text('Choose document file (PDF / PNG)'),
-                subtitle: const Text('Upload certified digital document'),
+                title: const LocalizedText('Choose document file (PDF / PNG)'),
+                subtitle: const LocalizedText(
+                  'Upload certified digital document',
+                ),
                 onTap: () => Navigator.pop(sheet, _TruckDocumentSource.file),
               ),
             ],
@@ -1037,14 +1044,14 @@ class _DocumentGroupState extends State<_DocumentGroup> {
           children: [
             Icon(Icons.error_outline_rounded, color: Colors.red),
             SizedBox(width: 8),
-            Text('Upload Failed'),
+            LocalizedText('Upload Failed'),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            const LocalizedText(
               'There was a problem uploading your document to the server:',
             ),
             const SizedBox(height: 10),
@@ -1055,7 +1062,7 @@ class _DocumentGroupState extends State<_DocumentGroup> {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.red.withValues(alpha: 0.25)),
               ),
-              child: Text(
+              child: LocalizedText(
                 errorDetails,
                 style: const TextStyle(
                   fontFamily: 'monospace',
@@ -1069,7 +1076,7 @@ class _DocumentGroupState extends State<_DocumentGroup> {
         actions: [
           FilledButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Dismiss'),
+            child: const LocalizedText('Dismiss'),
           ),
         ],
       ),
@@ -1115,7 +1122,7 @@ class _DocumentGroupState extends State<_DocumentGroup> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
+                    LocalizedText(
                       widget.type.label,
                       style: Theme.of(sheet).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w800,
@@ -1167,14 +1174,14 @@ class _DocumentGroupState extends State<_DocumentGroup> {
                                         color: Colors.grey,
                                       ),
                                       const SizedBox(height: 12),
-                                      const Text(
+                                      const LocalizedText(
                                         'Unable to display image preview.',
                                         style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
                                       const SizedBox(height: 4),
-                                      Text(
+                                      LocalizedText(
                                         error.toString(),
                                         textAlign: TextAlign.center,
                                         style: const TextStyle(

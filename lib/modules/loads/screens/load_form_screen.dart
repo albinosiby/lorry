@@ -1,4 +1,6 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import '../../vehicles/widgets/truck_length_input.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -137,7 +139,9 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
     cargo.text = load.cargo;
     price.text = load.price?.toStringAsFixed(2) ?? '';
     weight.text = load.weightTonnes.toString();
-    vehicleLength = load.requiredVehicleLengthFt?.toStringAsFixed(0);
+    vehicleLength = load.requiredVehicleLengthFt == null
+        ? null
+        : feetValue(load.requiredVehicleLengthFt!);
     note.text = load.specialNote;
     isNegotiable =
         load.specialNote.toLowerCase().contains('negotiable') ||
@@ -433,7 +437,7 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
       child: edit || widget.standalone
           ? Scaffold(
               appBar: AppBar(
-                title: Text(edit ? 'Edit Shipment' : 'Post Load'),
+                title: LocalizedText(edit ? 'Edit Shipment' : 'Post Load'),
                 leading: BackButton(
                   onPressed: () async {
                     if (context.canPop()) {
@@ -535,7 +539,7 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    Text(
+                    LocalizedText(
                       edit
                           ? 'EDIT SHIPMENT POSTING'
                           : 'FREIGHT BROADCAST RADAR',
@@ -552,7 +556,7 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              Text(
+              LocalizedText(
                 edit ? 'Update Your Cargo Load' : 'Post a Load to Fleets',
                 style: const TextStyle(
                   color: Colors.white,
@@ -562,7 +566,7 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
                 ),
               ),
               const SizedBox(height: 6),
-              Text(
+              LocalizedText(
                 edit
                     ? 'Keep pickup route, weight, and freight offers accurate for drivers.'
                     : 'Broadcast your cargo to verified fleet operators across India for quick quotes and prompt truck assignment.',
@@ -636,7 +640,7 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
                 : Colors.white.withValues(alpha: 0.2),
           ),
           child: Center(
-            child: Text(
+            child: LocalizedText(
               num,
               style: TextStyle(
                 color: active ? const Color(0xFF13362D) : Colors.white,
@@ -647,12 +651,16 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
           ),
         ),
         const SizedBox(width: 6),
-        Text(
-          title,
-          style: TextStyle(
-            color: active ? Colors.white : Colors.white.withValues(alpha: 0.5),
-            fontSize: 11,
-            fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+        Flexible(
+          child: LocalizedText(
+            title,
+            style: TextStyle(
+              color: active
+                  ? Colors.white
+                  : Colors.white.withValues(alpha: 0.5),
+              fontSize: 11,
+              fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+            ),
           ),
         ),
       ],
@@ -727,7 +735,7 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
                 ),
                 onPressed: _addUnloadStop,
                 icon: const Icon(Icons.add_location_alt_outlined, size: 18),
-                label: const Text(
+                label: const LocalizedText(
                   'Add Intermediate Unload Stop (Optional)',
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                 ),
@@ -762,7 +770,9 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
             searchPlace: context.read<LoadFormCubit>().searchPlace,
             validator: (value) {
               final loc = canonicalLocation(value);
-              if (loc == null) return 'Destination location name is mandatory.';
+              if (loc == null) {
+                return 'Destination location name is mandatory.';
+              }
               if (loc == canonicalLocation(pickupText.text)) {
                 return 'Destination must be different from pickup.';
               }
@@ -808,7 +818,7 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
+                child: LocalizedText(
                   'Intermediate Stop #${index + 1}',
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
@@ -818,7 +828,7 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
               ),
               IconButton(
                 visualDensity: VisualDensity.compact,
-                tooltip: 'Remove Stop',
+                tooltip: localize(context, 'Remove Stop'),
                 icon: const Icon(Icons.close_rounded, size: 18),
                 onPressed: () => _removeUnloadStop(index),
               ),
@@ -905,7 +915,10 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
                 return Padding(
                   padding: const EdgeInsets.only(right: 6),
                   child: ActionChip(
-                    label: Text(tag, style: const TextStyle(fontSize: 11)),
+                    label: LocalizedText(
+                      tag,
+                      style: const TextStyle(fontSize: 11),
+                    ),
                     visualDensity: VisualDensity.compact,
                     padding: EdgeInsets.zero,
                     onPressed: () {
@@ -953,7 +966,7 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
           spacing: 8,
           runSpacing: 8,
           children: [
-            Text(
+            LocalizedText(
               'REQUIRED VEHICLE TYPE',
               style: TextStyle(
                 fontSize: 11,
@@ -969,7 +982,7 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
                   color: cs.primaryContainer,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text(
+                child: LocalizedText(
                   vehicle!,
                   style: TextStyle(
                     fontSize: 11,
@@ -1018,12 +1031,14 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
                       color: isSel ? cs.primary : cs.onSurfaceVariant,
                     ),
                     const SizedBox(width: 7),
-                    Text(
-                      type,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
-                        color: isSel ? cs.primary : cs.onSurface,
+                    Flexible(
+                      child: LocalizedText(
+                        type,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
+                          color: isSel ? cs.primary : cs.onSurface,
+                        ),
                       ),
                     ),
                   ],
@@ -1041,7 +1056,7 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
           builder: (field) => field.hasError
               ? Padding(
                   padding: const EdgeInsets.only(top: 6, left: 4),
-                  child: Text(
+                  child: LocalizedText(
                     field.errorText!,
                     style: TextStyle(color: cs.error, fontSize: 12),
                   ),
@@ -1053,18 +1068,11 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
   }
 
   Widget _buildVehicleLengthSelector(BuildContext context) {
-    return DropdownButtonFormField<String>(
-      key: ValueKey('length-$vehicleLength-$draftId'),
-      initialValue: vehicleLength,
-      isExpanded: true,
-      decoration: const InputDecoration(labelText: 'Truck length (optional)'),
-      items: [
-        const DropdownMenuItem<String>(value: null, child: Text('Any length')),
-        ...vehicleLengthOptions.map(
-          (len) =>
-              DropdownMenuItem<String>(value: len, child: Text('$len ft body')),
-        ),
-      ],
+    return TruckLengthInput(
+      key: ValueKey('length-$draftId'),
+      value: vehicleLength,
+      allowAny: true,
+      label: 'Truck length (optional)',
       onChanged: (val) {
         setState(() {
           vehicleLength = val;
@@ -1160,7 +1168,7 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
             builder: (field) => field.hasError
                 ? Padding(
                     padding: const EdgeInsets.only(top: 6, left: 4),
-                    child: Text(
+                    child: LocalizedText(
                       field.errorText!,
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.error,
@@ -1218,11 +1226,11 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
-              title: const Text(
+              title: const LocalizedText(
                 'Price is negotiable',
                 style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
               ),
-              subtitle: Text(
+              subtitle: LocalizedText(
                 isNegotiable
                     ? 'Transporters and drivers can submit counter-offers'
                     : 'Fixed budget offer — no counter-negotiations accepted',
@@ -1249,7 +1257,7 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
                   return Padding(
                     padding: const EdgeInsets.only(right: 6),
                     child: ActionChip(
-                      label: Text(
+                      label: LocalizedText(
                         formatted,
                         style: const TextStyle(fontSize: 11),
                       ),
@@ -1328,7 +1336,7 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       hasRoute
                           ? '${pickupText.text} → ${destinationText.text}'
                           : 'Set Route & Specifications',
@@ -1339,8 +1347,8 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      '${weight.text.isEmpty ? '0' : weight.text} tonnes · ${vehicle ?? 'Any truck'} · ${price.text.isEmpty ? 'Set budget' : '₹${price.text}'} (${isNegotiable ? 'Negotiable' : 'Fixed'})',
+                    LocalizedText(
+                      '${localize(context, weight.text.isEmpty ? '0' : weight.text)} tonnes · ${vehicle ?? 'Any truck'} · ${localize(context, price.text.isEmpty ? 'Set budget' : '₹${price.text}')} (${localize(context, isNegotiable ? 'Negotiable' : 'Fixed')})',
                       style: TextStyle(
                         fontSize: 12,
                         color: cs.onSurfaceVariant,
@@ -1354,7 +1362,7 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
           const SizedBox(height: 16),
 
           // Notice
-          Text(
+          LocalizedText(
             'Your load will be visible to verified transport operators immediately upon publishing.',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -1418,7 +1426,7 @@ class _CardSection extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Center(
-                  child: Text(
+                  child: LocalizedText(
                     stepNumber,
                     style: TextStyle(
                       color: cs.primary,
@@ -1433,14 +1441,14 @@ class _CardSection extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       title,
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
                       ),
                     ),
-                    Text(
+                    LocalizedText(
                       subtitle,
                       style: TextStyle(
                         fontSize: 12,
@@ -1542,7 +1550,7 @@ class _RouteNode extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Flexible(
-                child: Text(
+                child: LocalizedText(
                   title,
                   style: TextStyle(
                     color: color,
@@ -1556,21 +1564,18 @@ class _RouteNode extends StatelessWidget {
           ),
           const SizedBox(height: 10),
 
-          // Location Name Field & Map Pin Button in a ROW
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          // Keep long translated labels usable on a narrow phone.
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                child: AppTextField(
-                  controller: controller,
-                  label: label,
-                  hint: hint,
-                  textCapitalization: TextCapitalization.words,
-                  validator: validator,
-                  onChanged: onChanged,
-                ),
+              AppTextField(
+                controller: controller,
+                label: label,
+                hint: hint,
+                textCapitalization: TextCapitalization.words,
+                validator: validator,
+                onChanged: onChanged,
               ),
-              const SizedBox(width: 8),
               Padding(
                 padding: const EdgeInsets.only(top: 2),
                 child: SizedBox(
@@ -1614,7 +1619,7 @@ class _RouteNode extends StatelessWidget {
                           ? const Color(0xFF2E7D32)
                           : cs.primary,
                     ),
-                    label: Text(
+                    label: LocalizedText(
                       hasCoordinates ? 'Pinned' : 'Pin on map',
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
@@ -1651,7 +1656,7 @@ class _RouteNode extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Expanded(
-                    child: Text(
+                    child: LocalizedText(
                       'Location added: (${latitude!.toStringAsFixed(4)}, ${longitude!.toStringAsFixed(4)})',
                       style: const TextStyle(
                         color: Color(0xFF2E7D32),
@@ -1678,7 +1683,7 @@ class _RouteNode extends StatelessWidget {
                           Icon(Icons.info_outline, size: 14, color: cs.error),
                           const SizedBox(width: 4),
                           Expanded(
-                            child: Text(
+                            child: LocalizedText(
                               field.errorText!,
                               style: TextStyle(color: cs.error, fontSize: 11),
                             ),
@@ -1741,7 +1746,7 @@ class _ScheduleTile extends StatelessWidget {
                 Icon(icon, size: 16, color: iconColor),
                 const SizedBox(width: 6),
                 Flexible(
-                  child: Text(
+                  child: LocalizedText(
                     label,
                     style: TextStyle(
                       fontSize: 10,
@@ -1760,7 +1765,7 @@ class _ScheduleTile extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 2),
-            Text(
+            LocalizedText(
               subtitle,
               style: TextStyle(fontSize: 11.5, color: cs.onSurfaceVariant),
             ),

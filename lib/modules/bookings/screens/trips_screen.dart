@@ -1,3 +1,4 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -66,7 +67,7 @@ class _TripsScreenState extends State<TripsScreen> {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    Text(
+                    LocalizedText(
                       widget.requests
                           ? 'Booking Requests (${model.bookings.length})'
                           : 'Trips & Consignments (${model.bookings.length})',
@@ -112,7 +113,7 @@ class _TripsScreenState extends State<TripsScreen> {
                             ? null
                             : () => context.read<TripsCubit>().more(),
                         icon: const Icon(Icons.expand_more_rounded),
-                        label: const Text('Load More Trips'),
+                        label: const LocalizedText('Load More Trips'),
                       ),
                     ),
                   ),
@@ -128,11 +129,11 @@ class _TripsScreenState extends State<TripsScreen> {
     return widget.requests
         ? Scaffold(
             appBar: AppBar(
-              title: const Text('Booking Requests'),
+              title: const LocalizedText('Booking Requests'),
               centerTitle: false,
               actions: [
                 IconButton(
-                  tooltip: 'Refresh',
+                  tooltip: localize(context, 'Refresh'),
                   icon: const Icon(Icons.refresh_rounded),
                   onPressed: refresh,
                 ),
@@ -226,7 +227,7 @@ class _TripsScreenState extends State<TripsScreen> {
                               color: const Color(0xFFD5E9A9),
                             ),
                             const SizedBox(width: 5),
-                            Text(
+                            LocalizedText(
                               widget.requests
                                   ? 'CARRIER REQUESTS'
                                   : 'DISPATCH COMMAND',
@@ -257,7 +258,7 @@ class _TripsScreenState extends State<TripsScreen> {
                           ),
                           onPressed: () => context.go(Routes.findLoads),
                           icon: const Icon(Icons.search, size: 16),
-                          label: const Text(
+                          label: const LocalizedText(
                             'Find Loads',
                             style: TextStyle(
                               fontSize: 12,
@@ -268,7 +269,7 @@ class _TripsScreenState extends State<TripsScreen> {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  Text(
+                  LocalizedText(
                     widget.requests
                         ? 'Review Requests'
                         : 'Your Journeys & Loads',
@@ -280,7 +281,7 @@ class _TripsScreenState extends State<TripsScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
+                  LocalizedText(
                     widget.requests
                         ? 'Connect with verified carriers who requested your freight loads.'
                         : 'Track active shipments from initial pickup to destination delivery.',
@@ -370,7 +371,7 @@ class _TripsScreenState extends State<TripsScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                const LocalizedText(
                                   'ACTIVE CONSIGNMENT IN TRANSIT',
                                   style: TextStyle(
                                     color: Color(0xFFD5E9A9),
@@ -380,7 +381,7 @@ class _TripsScreenState extends State<TripsScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 2),
-                                Text(
+                                LocalizedText(
                                   '${activeTransitTrip.load.pickupLabel} → ${activeTransitTrip.load.destinationLabel}',
                                   style: const TextStyle(
                                     color: Colors.white,
@@ -411,7 +412,7 @@ class _TripsScreenState extends State<TripsScreen> {
                               '${Routes.tracking}/${activeTransitTrip.id}',
                             ),
                             icon: const Icon(Icons.gps_fixed_rounded, size: 14),
-                            label: const Text(
+                            label: const LocalizedText(
                               'Live GPS',
                               style: TextStyle(
                                 fontSize: 11,
@@ -447,7 +448,7 @@ class _TripsScreenState extends State<TripsScreen> {
           children: [
             Icon(icon, size: 11, color: color ?? const Color(0xFFD5E9A9)),
             const SizedBox(width: 4),
-            Text(
+            LocalizedText(
               label,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.65),
@@ -498,7 +499,7 @@ class _TripsScreenState extends State<TripsScreen> {
                     ? const Color(0xFFD5E9A9)
                     : (isDark ? Colors.white60 : Colors.black54),
               ),
-              label: Text(f.$2),
+              label: LocalizedText(f.$2),
               labelStyle: TextStyle(
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
@@ -599,7 +600,7 @@ class _TripsScreenState extends State<TripsScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text(
+                        LocalizedText(
                           widget.requests ? b.driverName : b.load.vehicle,
                           style: const TextStyle(
                             fontSize: 14,
@@ -645,8 +646,8 @@ class _TripsScreenState extends State<TripsScreen> {
                             ),
                             const SizedBox(width: 6),
                             Flexible(
-                              child: Text(
-                                '${b.load.weightLabel} · ${b.load.cargo}',
+                              child: LocalizedText(
+                                '${localize(context, b.load.weightLabel)} · ${b.load.cargo}',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
@@ -674,7 +675,7 @@ class _TripsScreenState extends State<TripsScreen> {
                           ).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: Text(
+                        child: LocalizedText(
                           b.load.priceLabel,
                           style: const TextStyle(
                             color: Color(0xFF193F35),
@@ -706,7 +707,7 @@ class _TripsScreenState extends State<TripsScreen> {
                           onPressed: () =>
                               context.push('${Routes.tracking}/${b.id}'),
                           icon: const Icon(Icons.gps_fixed_rounded, size: 15),
-                          label: const Text(
+                          label: const LocalizedText(
                             'Track Live GPS',
                             style: TextStyle(
                               fontSize: 12,
@@ -735,7 +736,7 @@ class _TripsScreenState extends State<TripsScreen> {
                           if (mounted) refresh();
                         },
                         icon: const Icon(Icons.article_outlined, size: 15),
-                        label: const Text(
+                        label: const LocalizedText(
                           'Trip Details',
                           style: TextStyle(
                             fontSize: 12,
@@ -801,7 +802,7 @@ class _TripsScreenState extends State<TripsScreen> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
+                  LocalizedText(
                     'Pickup · ${load.pickupScheduleLabel}',
                     style: TextStyle(
                       fontSize: 11,
@@ -840,7 +841,7 @@ class _TripsScreenState extends State<TripsScreen> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
+                  LocalizedText(
                     'Drop-off Destination',
                     style: TextStyle(
                       fontSize: 11,
@@ -874,7 +875,7 @@ class _TripsScreenState extends State<TripsScreen> {
               color: Colors.amber,
             ),
             SizedBox(width: 4),
-            Text(
+            LocalizedText(
               'DELIVERY REPORTED',
               style: TextStyle(
                 color: Colors.amber,
@@ -943,7 +944,7 @@ class _TripsScreenState extends State<TripsScreen> {
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: color.withValues(alpha: 0.4), width: 0.8),
       ),
-      child: Text(
+      child: LocalizedText(
         label,
         style: TextStyle(
           color: color,
@@ -984,12 +985,12 @@ class _TripsScreenState extends State<TripsScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          Text(
+          LocalizedText(
             widget.requests ? 'No booking requests found' : 'No trips found',
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 6),
-          Text(
+          LocalizedText(
             widget.requests
                 ? 'Incoming booking requests from drivers will appear here once loads are posted.'
                 : 'Browse available freight loads and send your booking requests to start your next journey.',
@@ -1016,7 +1017,7 @@ class _TripsScreenState extends State<TripsScreen> {
               ),
               onPressed: () => context.go(Routes.findLoads),
               icon: const Icon(Icons.search_rounded),
-              label: const Text(
+              label: const LocalizedText(
                 'Browse Available Loads',
                 style: TextStyle(fontWeight: FontWeight.w700),
               ),

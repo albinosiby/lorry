@@ -1,3 +1,4 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:lorry_link/core/state/resource_cubit.dart';
 
@@ -44,7 +45,7 @@ class AppButton extends StatelessWidget {
           Icon(icon, size: 19),
           const SizedBox(width: 10),
         ],
-        Flexible(child: Text(label, textAlign: TextAlign.center)),
+        Flexible(child: LocalizedText(label, textAlign: TextAlign.center)),
       ],
     ),
   );
@@ -59,7 +60,7 @@ class PageHeading extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        LocalizedText(
           eyebrow.toUpperCase(),
           style: TextStyle(
             color: Theme.of(context).colorScheme.primary,
@@ -69,9 +70,9 @@ class PageHeading extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 9),
-        Text(title, style: Theme.of(context).textTheme.headlineLarge),
+        LocalizedText(title, style: Theme.of(context).textTheme.headlineLarge),
         const SizedBox(height: 8),
-        Text(
+        LocalizedText(
           subtitle,
           style: TextStyle(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -105,13 +106,13 @@ class AppEmptyState extends StatelessWidget {
           child: Icon(icon, size: 30),
         ),
         const SizedBox(height: 20),
-        Text(
+        LocalizedText(
           title,
           style: Theme.of(context).textTheme.titleLarge,
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
-        Text(message, textAlign: TextAlign.center),
+        LocalizedText(message, textAlign: TextAlign.center),
         if (action != null) ...[const SizedBox(height: 20), action!],
       ],
     ),
@@ -133,9 +134,12 @@ class ErrorPanel extends StatelessWidget {
             color: Theme.of(context).colorScheme.error,
           ),
           const SizedBox(height: 8),
-          Text(message, textAlign: TextAlign.center),
+          LocalizedText(message, textAlign: TextAlign.center),
           if (retry != null)
-            TextButton(onPressed: retry, child: const Text('Try again')),
+            TextButton(
+              onPressed: retry,
+              child: const LocalizedText('Try again'),
+            ),
         ],
       ),
     ),
@@ -199,7 +203,7 @@ class StatusBadge extends StatelessWidget {
         color: color.withValues(alpha: .12),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Text(
+      child: LocalizedText(
         label,
         style: TextStyle(
           color: Theme.of(context).brightness == Brightness.dark
@@ -233,7 +237,7 @@ class InfoRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              LocalizedText(
                 label,
                 style: TextStyle(
                   fontSize: 12,

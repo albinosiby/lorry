@@ -14,6 +14,7 @@ abstract final class Routes {
       driverPostedLoads = '/driver/posted-loads',
       trips = '/trips',
       profile = '/profile',
+      settings = '/profile/settings',
       notifications = '/notifications',
       verification = '/profile/verification',
       nearbyServices = '/driver/services',

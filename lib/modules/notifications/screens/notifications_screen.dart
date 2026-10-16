@@ -1,3 +1,4 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -11,7 +12,7 @@ class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Updates')),
+    appBar: AppBar(title: const LocalizedText('Updates')),
     body: PageBody(
       narrow: true,
       onRefresh: () => context.read<NotificationsCubit>().load(),
@@ -30,7 +31,7 @@ class NotificationsScreen extends StatelessWidget {
                 final c = context.read<NotificationsCubit>();
                 if (await c.read()) c.load();
               },
-              child: const Text('Mark all as read'),
+              child: const LocalizedText('Mark all as read'),
             ),
           ),
           BlocConsumer<
@@ -66,7 +67,7 @@ class NotificationsScreen extends StatelessWidget {
                               child: const Icon(Icons.notifications_none),
                             ),
                           ),
-                          title: Text(
+                          title: LocalizedText(
                             item.title,
                             style: TextStyle(
                               fontWeight: item.readAt == null
@@ -74,7 +75,7 @@ class NotificationsScreen extends StatelessWidget {
                                   : FontWeight.w500,
                             ),
                           ),
-                          subtitle: Text(
+                          subtitle: LocalizedText(
                             '${item.body}\n${DateFormat('d MMM, h:mm a').format(item.createdAt.toLocal())}',
                           ),
                           isThreeLine: true,
@@ -101,7 +102,7 @@ class NotificationsScreen extends StatelessWidget {
                       onPressed: state.loading
                           ? null
                           : () => context.read<NotificationsCubit>().more(),
-                      child: const Text('Load more'),
+                      child: const LocalizedText('Load more'),
                     ),
                 ],
               ),

@@ -1,4 +1,7 @@
 import 'package:get_it/get_it.dart';
+import '../modules/settings/cubit/language_cubit.dart';
+import '../modules/settings/repositories/language_repository.dart';
+import '../modules/settings/repositories/language_repository_interface.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../utils/services/supabase_service.dart';
 import '../utils/services/workflow_sync_service.dart';
@@ -57,6 +60,7 @@ import '../modules/tracking/cubit/trip_tracking_cubit.dart';
 
 final di = GetIt.instance;
 void configureDependencies(SupabaseClient client) {
+  di.registerLazySingleton<ILanguageRepository>(() => LanguageRepository());
   di.registerLazySingleton(() => SupabaseService(client));
   di.registerLazySingleton(() => WorkflowSyncService(client));
   di.registerLazySingleton<IPaymentRequestStore>(
@@ -104,6 +108,7 @@ void configureDependencies(SupabaseClient client) {
 }
 
 void configureCubits() {
+  di.registerFactory(() => LanguageCubit(di()));
   di.registerFactory(() => SessionCubit(di()));
   di.registerFactory(() => AuthFormCubit(di()));
   di.registerFactory(() => ProfileCubit(di(), di()));

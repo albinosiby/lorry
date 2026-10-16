@@ -1,3 +1,4 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -169,7 +170,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
                             ? const Color(0xFF101B15)
                             : const Color(0xFFE8F0EC),
                         child: const Center(
-                          child: Text(
+                          child: LocalizedText(
                             'Map tiles not configured for this build. Live coordinates remain active.',
                           ),
                         ),
@@ -187,7 +188,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
                   ),
                   child: const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                    child: Text(
+                    child: LocalizedText(
                       '© OpenStreetMap',
                       style: TextStyle(fontSize: 10, color: Colors.black87),
                     ),
@@ -248,7 +249,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
                             ),
                             const SizedBox(width: 8),
                             Expanded(
-                              child: Text(
+                              child: LocalizedText(
                                 trackingFinished
                                     ? 'TRIP FINISHED · LAST SHARED LOCATION'
                                     : booking?.status == 'accepted'
@@ -360,7 +361,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    LocalizedText(
                       booking?.load.cargo ?? 'Active Freight Cargo',
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
@@ -369,9 +370,9 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    Text(
+                    LocalizedText(
                       booking != null
-                          ? '${booking.load.vehicle} · Driver: ${booking.driverName}'
+                          ? '${localize(context, booking.load.vehicle)} · Driver: ${booking.driverName}'
                           : 'Live In-Transit Shipment',
                       style: TextStyle(
                         fontSize: 12,
@@ -390,7 +391,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
           if (booking != null) ...[
             const SizedBox(height: 12),
             RouteSummary(booking.load.pickup, booking.load.destination),
-            if (booking.itemsCollected) const Text('Item collected'),
+            if (booking.itemsCollected) const LocalizedText('Item collected'),
           ],
 
           const SizedBox(height: 14),
@@ -408,7 +409,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
                 ),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: Text(
+                  child: LocalizedText(
                     '${location.latitude.toStringAsFixed(5)}, ${location.longitude.toStringAsFixed(5)}',
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
@@ -416,7 +417,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
                     ),
                   ),
                 ),
-                Text(
+                LocalizedText(
                   'Updated ${DateFormat('h:mm a').format(location.recordedAt.toLocal())}',
                   style: TextStyle(
                     fontSize: 12,
@@ -427,7 +428,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
               ],
             ),
             const SizedBox(height: 4),
-            Text(
+            LocalizedText(
               trackingFinished
                   ? 'Location sharing ended. This is the last shared trip point.'
                   : booking?.status == 'accepted'
@@ -449,7 +450,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
                 ),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: Text(
+                  child: LocalizedText(
                     trackingFinished
                         ? 'No location was recorded for this completed trip.'
                         : booking?.status == 'accepted'
@@ -479,7 +480,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
                 ),
               ),
               icon: const Icon(Icons.directions_outlined, size: 20),
-              label: const Text(
+              label: const LocalizedText(
                 'View directions',
                 style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
               ),
@@ -490,7 +491,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
             const SizedBox(height: 12),
             FilledButton.icon(
               icon: const Icon(Icons.call_outlined),
-              label: const Text('Call driver'),
+              label: const LocalizedText('Call driver'),
               onPressed: booking.otherPhone.isEmpty
                   ? null
                   : () async {

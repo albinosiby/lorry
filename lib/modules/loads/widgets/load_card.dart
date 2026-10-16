@@ -1,3 +1,4 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:lorry_link/design_system/design_system.dart';
 import '../models/load_model.dart';
@@ -81,7 +82,7 @@ class LoadCard extends StatelessWidget {
                             color: Color(0xFF193F35),
                           ),
                           const SizedBox(width: 5),
-                          Text(
+                          LocalizedText(
                             load.vehicle,
                             style: const TextStyle(
                               fontSize: 11,
@@ -94,8 +95,9 @@ class LoadCard extends StatelessWidget {
                     ),
 
                     // Date & Status
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
                       children: [
                         if (distanceKm != null) ...[
                           Container(
@@ -123,7 +125,7 @@ class LoadCard extends StatelessWidget {
                                   color: Color(0xFF2E7D32),
                                 ),
                                 const SizedBox(width: 4),
-                                Text(
+                                LocalizedText(
                                   distanceKm! < 1
                                       ? '< 1 km away'
                                       : '${distanceKm!.toStringAsFixed(1)} km away',
@@ -138,7 +140,7 @@ class LoadCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 8),
                         ],
-                        Text(
+                        LocalizedText(
                           load.dateLabel,
                           style: TextStyle(
                             fontSize: 11,
@@ -192,7 +194,7 @@ class LoadCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       // Weight chip
-                      Text(
+                      LocalizedText(
                         load.weightLabel,
                         style: const TextStyle(
                           fontSize: 12,
@@ -234,7 +236,7 @@ class LoadCard extends StatelessWidget {
                           color: AppTheme.orange.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: Text(
+                        child: LocalizedText(
                           '${load.requestCount} requests',
                           style: const TextStyle(
                             fontSize: 10,
@@ -255,7 +257,7 @@ class LoadCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          LocalizedText(
                             'FREIGHT OFFER',
                             style: TextStyle(
                               fontSize: 9,
@@ -265,7 +267,7 @@ class LoadCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 1),
-                          Text(
+                          LocalizedText(
                             load.priceLabel,
                             style: const TextStyle(
                               fontSize: 16,
@@ -281,47 +283,52 @@ class LoadCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
 
-                    // Primary View / Apply Button
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (onViewPickupOnMap != null) ...[
-                          IconButton(
-                            visualDensity: VisualDensity.compact,
-                            tooltip: 'View on map',
-                            icon: const Icon(Icons.map_outlined, size: 18),
-                            onPressed: onViewPickupOnMap,
+                    // Bound actions so translated labels can wrap.
+                    Expanded(
+                      flex: 2,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (onViewPickupOnMap != null) ...[
+                            IconButton(
+                              visualDensity: VisualDensity.compact,
+                              tooltip: localize(context, 'View on map'),
+                              icon: const Icon(Icons.map_outlined, size: 18),
+                              onPressed: onViewPickupOnMap,
+                            ),
+                            const SizedBox(width: 4),
+                          ],
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF193F35),
+                                foregroundColor: const Color(0xFFD5E9A9),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                elevation: 0,
+                                visualDensity: VisualDensity.compact,
+                              ),
+                              onPressed: onTap,
+                              icon: const Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 14,
+                              ),
+                              label: const LocalizedText(
+                                'View Load',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
                           ),
-                          const SizedBox(width: 4),
                         ],
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF193F35),
-                            foregroundColor: const Color(0xFFD5E9A9),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            elevation: 0,
-                            visualDensity: VisualDensity.compact,
-                          ),
-                          onPressed: onTap,
-                          icon: const Icon(
-                            Icons.arrow_forward_rounded,
-                            size: 14,
-                          ),
-                          label: const Text(
-                            'View Load',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
@@ -347,7 +354,7 @@ class LoadCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Expanded(
-                          child: Text(
+                          child: LocalizedText(
                             load.deliveryReportedAt == null
                                 ? 'Shipment in transit'
                                 : 'Delivery reported',
@@ -372,7 +379,7 @@ class LoadCard extends StatelessWidget {
                               Icons.location_searching_outlined,
                               size: 14,
                             ),
-                            label: Text(
+                            label: LocalizedText(
                               load.deliveryReportedAt != null
                                   ? 'Confirm receipt'
                                   : 'Track',
@@ -411,7 +418,7 @@ class LoadCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 5),
-                  const Text(
+                  const LocalizedText(
                     'PICKUP',
                     style: TextStyle(
                       fontSize: 9,
@@ -472,7 +479,7 @@ class LoadCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 5),
-                  const Text(
+                  const LocalizedText(
                     'DESTINATION',
                     style: TextStyle(
                       fontSize: 9,
@@ -572,7 +579,7 @@ class RouteSummary extends StatelessWidget {
       ),
       const SizedBox(width: 12),
       Expanded(
-        child: Text(
+        child: LocalizedText(
           placeLabel(title),
           style: Theme.of(
             context,

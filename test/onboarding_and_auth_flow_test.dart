@@ -7,20 +7,19 @@ import 'package:lorry_link/modules/profile/models/profile_model.dart';
 
 void main() {
   group('Onboarding & Role Selection Flow', () {
-    testWidgets('Role selection displays both options with tags and descriptions', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: RoleSelectionScreen()),
-      );
+    testWidgets(
+      'Role selection displays both options with tags and descriptions',
+      (tester) async {
+        await tester.pumpWidget(const MaterialApp(home: RoleSelectionScreen()));
 
-      expect(find.text('What brings you to LORRY LINK?'), findsOneWidget);
-      expect(find.text('Get a truck for your load'), findsOneWidget);
-      expect(find.text('Customer / Shipper'), findsOneWidget);
-      expect(find.text('Get load for your truck'), findsOneWidget);
-      expect(find.text('Transporter / Driver'), findsOneWidget);
-      expect(find.textContaining('Sign in'), findsOneWidget);
-    });
+        expect(find.text('What brings you to LORRY LINK?'), findsOneWidget);
+        expect(find.text('Get a truck for your load'), findsOneWidget);
+        expect(find.text('Customer / Shipper'), findsOneWidget);
+        expect(find.text('Get load for your truck'), findsOneWidget);
+        expect(find.text('Transporter / Driver'), findsOneWidget);
+        expect(find.textContaining('Sign in'), findsOneWidget);
+      },
+    );
 
     test('Profile setup criteria requires name, phone, and address', () {
       // Incomplete profile without phone or address
@@ -68,20 +67,27 @@ void main() {
       expect(completeDriver.gender, 'Male');
     });
 
-    test('publicPaths allows unauthenticated access to role selection and sign up', () {
-      const signedOut = SessionModel(SessionStatus.signedOut);
+    test(
+      'publicPaths allows unauthenticated access to role selection and sign up',
+      () {
+        const signedOut = SessionModel(SessionStatus.signedOut);
 
-      // Welcome, role selection, sign-up and sign-in should be accessible publicly
-      expect(sessionRedirect(signedOut, Uri.parse('/welcome')), isNull);
-      expect(sessionRedirect(signedOut, Uri.parse('/role-selection')), isNull);
-      expect(sessionRedirect(signedOut, Uri.parse('/sign-up')), isNull);
-      expect(sessionRedirect(signedOut, Uri.parse('/sign-in')), isNull);
+        // Welcome, role selection, sign-up and sign-in should be accessible publicly
+        expect(sessionRedirect(signedOut, Uri.parse('/welcome')), isNull);
+        expect(
+          sessionRedirect(signedOut, Uri.parse('/role-selection')),
+          isNull,
+        );
+        expect(sessionRedirect(signedOut, Uri.parse('/sign-up')), isNull);
+        expect(sessionRedirect(signedOut, Uri.parse('/sign-in')), isNull);
+        expect(sessionRedirect(signedOut, Uri.parse('/profile/terms')), isNull);
 
-      // Private routes should redirect to sign-in
-      expect(
-        sessionRedirect(signedOut, Uri.parse('/home')),
-        '/sign-in?from=%2Fhome',
-      );
-    });
+        // Private routes should redirect to sign-in
+        expect(
+          sessionRedirect(signedOut, Uri.parse('/home')),
+          '/sign-in?from=%2Fhome',
+        );
+      },
+    );
   });
 }

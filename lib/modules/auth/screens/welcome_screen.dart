@@ -1,3 +1,4 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lorry_link/design_system/design_system.dart';
@@ -41,7 +42,7 @@ class WelcomeScreen extends StatelessWidget {
                 const Positioned(
                   bottom: 22,
                   left: 24,
-                  child: Text(
+                  child: LocalizedText(
                     'EVERY LOAD. A NEW POSSIBILITY.',
                     style: TextStyle(
                       color: Colors.white,
@@ -55,12 +56,12 @@ class WelcomeScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 32),
-          Text(
+          LocalizedText(
             'The right load.\nThe right connection.',
             style: Theme.of(context).textTheme.headlineLarge,
           ),
           const SizedBox(height: 16),
-          const Text(
+          const LocalizedText(
             'Connect your cargo with the people who move it. Find loads, arrange trips, and keep every delivery in view.',
           ),
           const SizedBox(height: 28),
@@ -72,7 +73,7 @@ class WelcomeScreen extends StatelessWidget {
           const SizedBox(height: 12),
           OutlinedButton(
             onPressed: () => context.go('/sign-in'),
-            child: const Text('I already have an account'),
+            child: const LocalizedText('I already have an account'),
           ),
           const SizedBox(height: 32),
           const Row(
@@ -80,7 +81,10 @@ class WelcomeScreen extends StatelessWidget {
             children: [
               Icon(Icons.route_outlined, size: 16),
               SizedBox(width: 8),
-              Text('Built for the road ahead', style: TextStyle(fontSize: 12)),
+              LocalizedText(
+                'Built for the road ahead',
+                style: TextStyle(fontSize: 12),
+              ),
             ],
           ),
         ],

@@ -1,3 +1,4 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import '../../vehicles/models/vehicle_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -41,7 +42,7 @@ Future<VehicleModel?> chooseBookingTruck(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
+            LocalizedText(
               'Select truck for this load',
               style: Theme.of(context).textTheme.titleLarge,
             ),
@@ -49,7 +50,7 @@ Future<VehicleModel?> chooseBookingTruck(
             if (trucks.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
-                child: Text(
+                child: LocalizedText(
                   'No suitable trucks. Add a truck matching the load type, tonnes and length in Manage my trucks.',
                 ),
               ),
@@ -61,8 +62,8 @@ Future<VehicleModel?> chooseBookingTruck(
                     ListTile(
                       leading: const Icon(Icons.local_shipping_outlined),
                       title: Text(truck.registrationNumber),
-                      subtitle: Text(
-                        '${truck.vehicleType} · ${truck.capacityTonnes} t · ${truck.lengthFt} ft',
+                      subtitle: LocalizedText(
+                        '${localize(context, truck.vehicleType)} · ${truck.capacityTonnes} t · ${truck.lengthFt} ft',
                       ),
                       onTap: () => Navigator.pop(context, truck),
                     ),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -46,6 +47,7 @@ import '../../modules/customer_trucks/screens/customer_trucks_screen.dart';
 import '../../modules/tracking/cubit/trip_tracking_cubit.dart';
 import '../../modules/tracking/screens/trip_tracking_screen.dart';
 import '../../modules/account/screens/account_resources_screen.dart';
+import '../../modules/settings/screens/settings_screen.dart';
 import 'routes.dart';
 
 class RouterRefresh extends ChangeNotifier {
@@ -62,6 +64,8 @@ class RouterRefresh extends ChangeNotifier {
 
 String? sessionRedirect(SessionModel session, Uri uri) {
   final path = uri.path;
+  // The same read-only terms page is available before and after authentication.
+  if (path == Routes.legal) return null;
   const publicPaths = [
     '/welcome',
     '/role-selection',
@@ -143,7 +147,7 @@ GoRouter createRouter(SessionCubit session, RouterRefresh refresh) => GoRouter(
   refreshListenable: refresh,
   redirect: (context, state) => sessionRedirect(session.state, state.uri),
   errorBuilder: (context, state) => Scaffold(
-    appBar: AppBar(title: const Text('Page unavailable')),
+    appBar: AppBar(title: const LocalizedText('Page unavailable')),
     body: AppEmptyState(
       'This page is unavailable',
       'The link may be incomplete or no longer available.',
@@ -169,7 +173,7 @@ GoRouter createRouter(SessionCubit session, RouterRefresh refresh) => GoRouter(
                         ErrorPanel(state.error!, retry: session.refresh),
                         TextButton(
                           onPressed: () => session.repository.signOut(),
-                          child: const Text('Back to sign in'),
+                          child: const LocalizedText('Back to sign in'),
                         ),
                       ],
                     ),
@@ -310,7 +314,7 @@ GoRouter createRouter(SessionCubit session, RouterRefresh refresh) => GoRouter(
       path: Routes.driverPostedLoads,
       builder: (context, state) => Scaffold(
         appBar: AppBar(
-          title: const Text('My Posted Loads'),
+          title: const LocalizedText('My Posted Loads'),
           leading: BackButton(
             onPressed: () {
               if (context.canPop()) {
@@ -379,6 +383,7 @@ GoRouter createRouter(SessionCubit session, RouterRefresh refresh) => GoRouter(
         );
       },
     ),
+    GoRoute(path: Routes.settings, builder: (_, _) => const SettingsScreen()),
     GoRoute(
       path: Routes.legal,
       builder: (_, _) =>

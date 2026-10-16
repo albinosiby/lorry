@@ -1,3 +1,4 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -25,10 +26,10 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Truck Availability Radar'),
+        title: const LocalizedText('Truck Availability Radar'),
         actions: [
           IconButton(
-            tooltip: 'Refresh Broadcasts',
+            tooltip: localize(context, 'Refresh Broadcasts'),
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () => context.read<AvailabilityCubit>().load(),
           ),
@@ -41,7 +42,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
         foregroundColor: Colors.white,
         onPressed: () => _openForm(context),
         icon: const Icon(Icons.radar_rounded, size: 20),
-        label: const Text(
+        label: const LocalizedText(
           'Broadcast Truck',
           style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.3),
         ),
@@ -183,7 +184,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    const LocalizedText(
                       'Route Availability Radar',
                       style: TextStyle(
                         color: Colors.white,
@@ -193,7 +194,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
+                    LocalizedText(
                       'Live Freight Matching Network',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.65),
@@ -229,7 +230,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    const Text(
+                    const LocalizedText(
                       'ACTIVE',
                       style: TextStyle(
                         color: Color(0xFF6BDB9C),
@@ -246,7 +247,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
           const SizedBox(height: 14),
 
           // Subtitle description
-          Text(
+          LocalizedText(
             'Broadcast empty vehicles to shippers along your return corridor. Avoid empty running and secure instant spot loads.',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.8),
@@ -319,18 +320,20 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
             children: [
               Icon(icon, size: 14, color: valueColor),
               const SizedBox(width: 4),
-              Text(
-                value,
-                style: TextStyle(
-                  color: valueColor,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
+              Flexible(
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    color: valueColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 2),
-          Text(
+          LocalizedText(
             label,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.6),
@@ -373,7 +376,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
               label: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
+                  LocalizedText(
                     title,
                     style: TextStyle(
                       fontWeight: isSelected
@@ -401,7 +404,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                 : Colors.black.withValues(alpha: 0.08)),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Text(
+                    child: LocalizedText(
                       '$count',
                       style: TextStyle(
                         fontSize: 10,
@@ -474,10 +477,12 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 1. Top Bar: HSRP Plate & Status Badge
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
               _buildHsrpPlate(registration),
-              const Spacer(),
+
               if (isOpen)
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -503,7 +508,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                         ),
                       ),
                       const SizedBox(width: 5),
-                      const Text(
+                      const LocalizedText(
                         'LIVE BROADCAST',
                         style: TextStyle(
                           color: Color(0xFF6BDB9C),
@@ -527,7 +532,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                         : Colors.black.withValues(alpha: 0.06),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Text(
+                  child: LocalizedText(
                     'CLOSED / EXPIRED',
                     style: TextStyle(
                       color: isDark
@@ -546,7 +551,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
           if (post.busy)
             const Padding(
               padding: EdgeInsets.only(bottom: 12),
-              child: Text(
+              child: LocalizedText(
                 'On assigned trip—not visible to customers. Post availability with your new location after delivery.',
               ),
             ),
@@ -626,7 +631,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Current Location
-                      Text(
+                      LocalizedText(
                         'CURRENT LOCATION',
                         style: TextStyle(
                           fontSize: 9,
@@ -650,7 +655,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                       const SizedBox(height: 12),
 
                       // Preferred Destination
-                      Text(
+                      LocalizedText(
                         'PREFERRED CORRIDOR',
                         style: TextStyle(
                           fontSize: 9,
@@ -661,7 +666,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                           letterSpacing: 0.5,
                         ),
                       ),
-                      Text(
+                      LocalizedText(
                         post.preferredDestination?.isNotEmpty == true
                             ? post.preferredDestination!
                             : 'Open to any destination corridor',
@@ -722,7 +727,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
           const SizedBox(height: 14),
 
           // 5. Card Footer: Date posted + Close Action
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
               Icon(
                 Icons.schedule_rounded,
@@ -732,7 +739,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                     : Colors.black45,
               ),
               const SizedBox(width: 5),
-              Text(
+              LocalizedText(
                 'Available from ${_formatDate(post.availableFrom)}',
                 style: TextStyle(
                   fontSize: 11,
@@ -741,7 +748,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                       : Colors.black54,
                 ),
               ),
-              const Spacer(),
+
               if (isOpen)
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
@@ -760,7 +767,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                   ),
                   onPressed: () => _confirmClosePost(context, post.id),
                   icon: const Icon(Icons.close_rounded, size: 14),
-                  label: const Text(
+                  label: const LocalizedText(
                     'Close Broadcast',
                     style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
                   ),
@@ -807,7 +814,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                 ),
               ),
               const SizedBox(height: 1),
-              const Text(
+              const LocalizedText(
                 'IND',
                 style: TextStyle(
                   fontSize: 6.5,
@@ -819,7 +826,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
             ],
           ),
           const SizedBox(width: 7),
-          Text(
+          LocalizedText(
             registrationNumber,
             style: const TextStyle(
               color: Color(0xFF111111),
@@ -860,7 +867,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
             color: isDark ? const Color(0xFF6BDB9C) : const Color(0xFF193F35),
           ),
           const SizedBox(width: 4),
-          Text(
+          LocalizedText(
             text,
             style: TextStyle(
               fontSize: 11,
@@ -906,7 +913,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          Text(
+          LocalizedText(
             'Register a Truck to Start Broadcasting',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -916,7 +923,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          LocalizedText(
             'Payload capacity, body dimensions, and vehicle specs are needed before shippers can match loads with your truck.',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -969,7 +976,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          Text(
+          LocalizedText(
             'No Active Availability Broadcasts',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -979,7 +986,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          LocalizedText(
             'Broadcast where your truck is currently stationed. Shippers in your corridor can immediately invite you to spot loads.',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -1002,7 +1009,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
             ),
             onPressed: () => _openForm(context),
             icon: const Icon(Icons.add_location_alt_rounded, size: 18),
-            label: const Text(
+            label: const LocalizedText(
               'Broadcast Truck Now',
               style: TextStyle(fontWeight: FontWeight.w700),
             ),
@@ -1025,7 +1032,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                 : Colors.black26,
           ),
           const SizedBox(height: 12),
-          Text(
+          LocalizedText(
             'No broadcasts match this filter',
             style: TextStyle(
               fontSize: 15,
@@ -1217,7 +1224,7 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        LocalizedText(
                           'Broadcast Truck Availability',
                           style: TextStyle(
                             fontSize: 18,
@@ -1227,7 +1234,7 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
                                 : const Color(0xFF193F35),
                           ),
                         ),
-                        Text(
+                        LocalizedText(
                           'Make vehicle discoverable to spot shippers',
                           style: TextStyle(
                             fontSize: 12,
@@ -1248,7 +1255,7 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
               const SizedBox(height: 20),
 
               // ─── Step 1: Select Fleet Vehicle ─────────────────────────────
-              Text(
+              LocalizedText(
                 '1. SELECT TRUCK FROM FLEET',
                 style: TextStyle(
                   fontSize: 11,
@@ -1307,8 +1314,8 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
                                 ],
                               ),
                               const SizedBox(height: 8),
-                              Text(
-                                '${v.capacityTonnes.toStringAsFixed(1)} T · ${v.vehicleType}',
+                              LocalizedText(
+                                '${v.capacityTonnes.toStringAsFixed(1)} T · ${localize(context, v.vehicleType)}',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
@@ -1328,7 +1335,7 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
               const SizedBox(height: 20),
 
               // ─── Step 2: Current Location & GPS ───────────────────────────
-              Text(
+              LocalizedText(
                 '2. CURRENT STATION & GPS LOCATION',
                 style: TextStyle(
                   fontSize: 11,
@@ -1383,7 +1390,7 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          LocalizedText(
                             latitude != null
                                 ? 'GPS Position Verified'
                                 : 'Live GPS Coordinate Required',
@@ -1396,7 +1403,7 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
                             ),
                           ),
                           if (latitude != null)
-                            Text(
+                            LocalizedText(
                               '${latitude!.toStringAsFixed(4)}° N, ${longitude!.toStringAsFixed(4)}° E',
                               style: TextStyle(
                                 fontSize: 10,
@@ -1424,7 +1431,7 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.sync_rounded, size: 14),
-                      label: Text(
+                      label: LocalizedText(
                         latitude == null ? 'Acquire GPS' : 'Update',
                         style: const TextStyle(
                           fontSize: 11,
@@ -1445,7 +1452,10 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
                     return Padding(
                       padding: const EdgeInsets.only(right: 6),
                       child: ActionChip(
-                        label: Text(hub, style: const TextStyle(fontSize: 11)),
+                        label: LocalizedText(
+                          hub,
+                          style: const TextStyle(fontSize: 11),
+                        ),
                         visualDensity: VisualDensity.compact,
                         padding: EdgeInsets.zero,
                         onPressed: () {
@@ -1461,7 +1471,7 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
               const SizedBox(height: 18),
 
               // ─── Step 3: Preferred Destination ────────────────────────────
-              Text(
+              LocalizedText(
                 '3. PREFERRED HEADING / CORRIDOR (OPTIONAL)',
                 style: TextStyle(
                   fontSize: 11,
@@ -1489,7 +1499,7 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
                     return Padding(
                       padding: const EdgeInsets.only(right: 6),
                       child: ActionChip(
-                        label: Text(
+                        label: LocalizedText(
                           corridor,
                           style: const TextStyle(fontSize: 11),
                         ),
@@ -1508,7 +1518,7 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
               const SizedBox(height: 18),
 
               // ─── Step 4: Driver Remarks & Preferences ─────────────────────
-              Text(
+              LocalizedText(
                 '4. FREIGHT PREFERENCES & REMARKS',
                 style: TextStyle(
                   fontSize: 11,
@@ -1537,7 +1547,7 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
                     return Padding(
                       padding: const EdgeInsets.only(right: 6),
                       child: ActionChip(
-                        label: Text(
+                        label: LocalizedText(
                           '+ $p',
                           style: const TextStyle(fontSize: 11),
                         ),
@@ -1608,7 +1618,7 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
         border: Border.all(color: const Color(0xFF1B1B1B), width: 1.2),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      child: Text(
+      child: LocalizedText(
         reg,
         style: const TextStyle(
           color: Color(0xFF111111),

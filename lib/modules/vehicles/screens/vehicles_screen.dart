@@ -1,4 +1,6 @@
+import 'package:lorry_link/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import '../widgets/truck_length_input.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lorry_link/config/routes/routes.dart';
@@ -18,11 +20,11 @@ class VehiclesScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Fleet & Trucks'),
+        title: const LocalizedText('My Fleet & Trucks'),
         centerTitle: false,
         actions: [
           IconButton(
-            tooltip: 'Refresh trucks',
+            tooltip: localize(context, 'Refresh trucks'),
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () => context.read<VehiclesCubit>().load(),
           ),
@@ -35,7 +37,7 @@ class VehiclesScreen extends StatelessWidget {
         foregroundColor: const Color(0xFFD5E9A9),
         elevation: 4,
         icon: const Icon(Icons.add_rounded, size: 22),
-        label: const Text(
+        label: const LocalizedText(
           'Add Truck',
           style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.3),
         ),
@@ -58,10 +60,12 @@ class VehiclesScreen extends StatelessWidget {
                 const SizedBox(height: 24),
 
                 // Section Title & Counter
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+
                   children: [
-                    Text(
+                    LocalizedText(
                       'Registered Fleet (${trucks.length})',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w800,
@@ -69,7 +73,7 @@ class VehiclesScreen extends StatelessWidget {
                       ),
                     ),
                     if (trucks.isNotEmpty)
-                      Text(
+                      LocalizedText(
                         'Tap truck for RC & Vault',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: isDark ? Colors.white60 : Colors.black54,
@@ -146,7 +150,9 @@ class VehiclesScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -157,7 +163,9 @@ class VehiclesScreen extends StatelessWidget {
                           color: const Color(0xFFD5E9A9).withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: const Color(0xFFD5E9A9).withValues(alpha: 0.4),
+                            color: const Color(
+                              0xFFD5E9A9,
+                            ).withValues(alpha: 0.4),
                           ),
                         ),
                         child: const Row(
@@ -169,19 +177,20 @@ class VehiclesScreen extends StatelessWidget {
                               color: Color(0xFFD5E9A9),
                             ),
                             SizedBox(width: 5),
-                            Text(
-                              'FLEET COMMAND',
-                              style: TextStyle(
-                                color: Color(0xFFD5E9A9),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1.1,
+                            Flexible(
+                              child: LocalizedText(
+                                'FLEET COMMAND',
+                                style: TextStyle(
+                                  color: Color(0xFFD5E9A9),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 1.1,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const Spacer(),
                       TextButton.icon(
                         style: TextButton.styleFrom(
                           foregroundColor: const Color(0xFFD5E9A9),
@@ -196,7 +205,7 @@ class VehiclesScreen extends StatelessWidget {
                         ),
                         onPressed: () => _edit(context),
                         icon: const Icon(Icons.add, size: 16),
-                        label: const Text(
+                        label: const LocalizedText(
                           'Add Vehicle',
                           style: TextStyle(
                             fontSize: 12,
@@ -207,7 +216,7 @@ class VehiclesScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  const Text(
+                  const LocalizedText(
                     'Your Verified Fleet',
                     style: TextStyle(
                       color: Colors.white,
@@ -217,7 +226,7 @@ class VehiclesScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
+                  LocalizedText(
                     'Add your trucks with RC & dimensions to match loads and boost trip earnings.',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.8),
@@ -243,33 +252,39 @@ class VehiclesScreen extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildMetricCol(
-                          'TOTAL TRUCKS',
-                          '${trucks.length}',
-                          Icons.local_shipping_outlined,
+                        Expanded(
+                          child: _buildMetricCol(
+                            'TOTAL TRUCKS',
+                            '${trucks.length}',
+                            Icons.local_shipping_outlined,
+                          ),
                         ),
                         Container(
                           width: 1,
                           height: 28,
                           color: Colors.white.withValues(alpha: 0.15),
                         ),
-                        _buildMetricCol(
-                          'PRIMARY VEHICLE',
-                          defaultTruck?.registrationNumber ?? 'None',
-                          Icons.star_rounded,
+                        Expanded(
+                          child: _buildMetricCol(
+                            'PRIMARY VEHICLE',
+                            defaultTruck?.registrationNumber ?? 'None',
+                            Icons.star_rounded,
+                          ),
                         ),
                         Container(
                           width: 1,
                           height: 28,
                           color: Colors.white.withValues(alpha: 0.15),
                         ),
-                        _buildMetricCol(
-                          'MATCH STATUS',
-                          trucks.isNotEmpty ? 'Active' : 'Pending',
-                          Icons.check_circle_outline_rounded,
-                          color: trucks.isNotEmpty
-                              ? const Color(0xFFD5E9A9)
-                              : Colors.amberAccent,
+                        Expanded(
+                          child: _buildMetricCol(
+                            'MATCH STATUS',
+                            trucks.isNotEmpty ? 'Active' : 'Pending',
+                            Icons.check_circle_outline_rounded,
+                            color: trucks.isNotEmpty
+                                ? const Color(0xFFD5E9A9)
+                                : Colors.amberAccent,
+                          ),
                         ),
                       ],
                     ),
@@ -296,19 +311,17 @@ class VehiclesScreen extends StatelessWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 11,
-              color: color ?? const Color(0xFFD5E9A9),
-            ),
+            Icon(icon, size: 11, color: color ?? const Color(0xFFD5E9A9)),
             const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.65),
-                fontSize: 9,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.5,
+            Flexible(
+              child: LocalizedText(
+                label,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.65),
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                ),
               ),
             ),
           ],
@@ -368,8 +381,10 @@ class VehiclesScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Top Row: Number Plate & Badges
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+
                   children: [
                     // Indian HSRP Number Plate
                     Container(
@@ -411,7 +426,7 @@ class VehiclesScreen extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 2),
-                              const Text(
+                              const LocalizedText(
                                 'IND',
                                 style: TextStyle(
                                   fontSize: 7,
@@ -452,7 +467,7 @@ class VehiclesScreen extends StatelessWidget {
                                 color: AppTheme.orange.withValues(alpha: 0.4),
                               ),
                             ),
-                            child: const Text(
+                            child: const LocalizedText(
                               '★ PRIMARY',
                               style: TextStyle(
                                 color: AppTheme.orange,
@@ -464,12 +479,9 @@ class VehiclesScreen extends StatelessWidget {
                           ),
                         const SizedBox(width: 6),
                         IconButton(
-                          tooltip: 'Edit truck specs',
+                          tooltip: localize(context, 'Edit truck specs'),
                           visualDensity: VisualDensity.compact,
-                          icon: const Icon(
-                            Icons.edit_outlined,
-                            size: 18,
-                          ),
+                          icon: const Icon(Icons.edit_outlined, size: 18),
                           onPressed: () => _edit(context, truck),
                         ),
                       ],
@@ -490,12 +502,13 @@ class VehiclesScreen extends StatelessWidget {
                     ),
                     _buildSpecChip(
                       icon: Icons.straighten_rounded,
-                      label: '${truck.lengthFt.toStringAsFixed(0)} ft Deck',
+                      label: '${feetValue(truck.lengthFt)} ft Deck',
                       isDark: isDark,
                     ),
                     _buildSpecChip(
                       icon: Icons.scale_outlined,
-                      label: '${truck.capacityTonnes.toStringAsFixed(1)} T Payload',
+                      label:
+                          '${truck.capacityTonnes.toStringAsFixed(1)} T Payload',
                       isDark: isDark,
                     ),
                   ],
@@ -522,28 +535,38 @@ class VehiclesScreen extends StatelessWidget {
                         color: Color(0xFF193F35),
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        'RC & Compliance Vault',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? Colors.white70 : const Color(0xFF193F35),
+                      Flexible(
+                        child: LocalizedText(
+                          'RC & Compliance Vault',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: isDark
+                                ? Colors.white70
+                                : const Color(0xFF193F35),
+                          ),
                         ),
                       ),
                       const Spacer(),
-                      Text(
-                        'View Details',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? const Color(0xFFD5E9A9) : const Color(0xFF193F35),
+                      Flexible(
+                        child: LocalizedText(
+                          'View Details',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: isDark
+                                ? const Color(0xFFD5E9A9)
+                                : const Color(0xFF193F35),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 4),
                       Icon(
                         Icons.arrow_forward_rounded,
                         size: 14,
-                        color: isDark ? const Color(0xFFD5E9A9) : const Color(0xFF193F35),
+                        color: isDark
+                            ? const Color(0xFFD5E9A9)
+                            : const Color(0xFF193F35),
                       ),
                     ],
                   ),
@@ -583,12 +606,14 @@ class VehiclesScreen extends StatelessWidget {
             color: isDark ? const Color(0xFFD5E9A9) : const Color(0xFF193F35),
           ),
           const SizedBox(width: 6),
-          Text(
+          LocalizedText(
             label,
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white.withValues(alpha: 0.85) : Colors.black87,
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.85)
+                  : Colors.black87,
             ),
           ),
         ],
@@ -625,39 +650,29 @@ class VehiclesScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-          const Text(
+          const LocalizedText(
             'No trucks registered yet',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 6),
-          const Text(
+          const LocalizedText(
             'Add your first vehicle with registration number and tonnage capacity to receive load match alerts.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.black54,
-              height: 1.4,
-            ),
+            style: TextStyle(fontSize: 13, color: Colors.black54, height: 1.4),
           ),
           const SizedBox(height: 22),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF193F35),
               foregroundColor: const Color(0xFFD5E9A9),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 12,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
             onPressed: () => _edit(context),
             icon: const Icon(Icons.add_rounded),
-            label: const Text(
+            label: const LocalizedText(
               'Add Your First Truck',
               style: TextStyle(fontWeight: FontWeight.w700),
             ),
@@ -706,7 +721,7 @@ class _VehicleFormState extends State<VehicleForm> {
       text: truck?.capacityTonnes.toString() ?? '',
     );
     vehicleType = truck?.vehicleType;
-    length = truck?.lengthFt.toStringAsFixed(0);
+    length = truck == null ? null : feetValue(truck.lengthFt);
     defaultTruck = truck?.isDefault ?? false;
   }
 
@@ -763,16 +778,18 @@ class _VehicleFormState extends State<VehicleForm> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Text(
-                    widget.truck == null ? 'Register New Truck' : 'Edit Truck Details',
+                  LocalizedText(
+                    widget.truck == null
+                        ? 'Register New Truck'
+                        : 'Edit Truck Details',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 6),
-              Text(
+              LocalizedText(
                 'Enter vehicle registration and cargo specifications for automated load matching.',
                 style: TextStyle(
                   fontSize: 12,
@@ -795,17 +812,23 @@ class _VehicleFormState extends State<VehicleForm> {
               // Vehicle Type Dropdown
               DropdownButtonFormField<String>(
                 initialValue: vehicleType,
-                decoration: InputDecoration(
-                  labelText: 'Truck Body / Type',
-                  prefixIcon: const Icon(Icons.category_outlined, size: 20),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
+                decoration: localizedDecoration(
+                  context,
+                  InputDecoration(
+                    labelText: 'Truck Body / Type',
+                    prefixIcon: const Icon(Icons.category_outlined, size: 20),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
                 isExpanded: true,
                 items: vehicleTypes
                     .map(
-                      (item) => DropdownMenuItem(value: item, child: Text(item)),
+                      (item) => DropdownMenuItem(
+                        value: item,
+                        child: LocalizedText(item),
+                      ),
                     )
                     .toList(),
                 onChanged: (value) => setState(() => vehicleType = value),
@@ -814,23 +837,10 @@ class _VehicleFormState extends State<VehicleForm> {
               const SizedBox(height: 14),
 
               // Deck Length Dropdown
-              DropdownButtonFormField<String>(
-                initialValue: length,
-                decoration: InputDecoration(
-                  labelText: 'Vehicle Deck Length',
-                  prefixIcon: const Icon(Icons.straighten_rounded, size: 20),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                isExpanded: true,
-                items: vehicleLengthOptions
-                    .map(
-                      (item) => DropdownMenuItem(value: item, child: Text('$item ft deck')),
-                    )
-                    .toList(),
+              TruckLengthInput(
+                value: length,
+                label: 'Vehicle Deck Length',
                 onChanged: (value) => setState(() => length = value),
-                validator: Validators.required,
               ),
               const SizedBox(height: 14),
 
@@ -863,11 +873,11 @@ class _VehicleFormState extends State<VehicleForm> {
                 child: SwitchListTile.adaptive(
                   activeThumbColor: const Color(0xFF193F35),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 14),
-                  title: const Text(
+                  title: const LocalizedText(
                     'Set as Primary Fleet Truck',
                     style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                   ),
-                  subtitle: const Text(
+                  subtitle: const LocalizedText(
                     'This vehicle will be selected first for posting your driver availability.',
                     style: TextStyle(fontSize: 12),
                   ),
@@ -880,7 +890,9 @@ class _VehicleFormState extends State<VehicleForm> {
               // Submit Button
               BlocBuilder<VehiclesCubit, ResourceState<List<VehicleModel>>>(
                 builder: (context, state) => AppButton(
-                  label: widget.truck == null ? 'Save & Register Truck' : 'Update Truck Specs',
+                  label: widget.truck == null
+                      ? 'Save & Register Truck'
+                      : 'Update Truck Specs',
                   busy: state.busy,
                   onPressed: () async {
                     if (!form.currentState!.validate()) return;
