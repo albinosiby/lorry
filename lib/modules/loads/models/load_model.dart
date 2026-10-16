@@ -14,6 +14,11 @@ const vehicleLengthOptions = ['10', '12', '14', '16', '20', '22', '24', '32'];
 String statusLabel(String value) => switch (value) {
   'in_transit' => 'In transit',
   'delivery_reported' => 'Delivery reported',
+  'delivery_confirmed' => 'Delivery confirmed',
+  'item_collected' => 'Items collected',
+  'payment_recorded' => 'Payment recorded',
+  'stop_unloaded' => 'Stop unloaded',
+  'delivery_issue' => 'Delivery issue reported',
   _ => value.isEmpty ? '' : '${value[0].toUpperCase()}${value.substring(1)}',
 };
 
@@ -40,6 +45,7 @@ class LoadModel extends Equatable {
     this.destinationLongitude,
     this.bookingId,
     this.deliveryReportedAt,
+    this.itemCollectedAt,
     this.unloadStops = const [],
     this.requestCount = 0,
   });
@@ -64,6 +70,7 @@ class LoadModel extends Equatable {
       destinationLongitude;
   final String? bookingId;
   final DateTime? deliveryReportedAt;
+  final DateTime? itemCollectedAt;
   final List<UnloadStop> unloadStops;
   final int requestCount;
   String get pickupLabel => placeLabel(pickup);
@@ -84,6 +91,10 @@ class LoadModel extends Equatable {
   String get displayStatus =>
       status == 'in_transit' && deliveryReportedAt != null
       ? 'delivery_reported'
+      : status == 'assigned' && itemCollectedAt != null
+      ? 'item_collected'
+      : status == 'completed'
+      ? 'delivery_confirmed'
       : status;
   String get priceLabel => price == null
       ? 'Price on discussion'
@@ -126,6 +137,9 @@ class LoadModel extends Equatable {
     destinationLatitude: (j['destination_latitude'] as num?)?.toDouble(),
     destinationLongitude: (j['destination_longitude'] as num?)?.toDouble(),
     bookingId: j['booking_id'],
+    itemCollectedAt: DateTime.tryParse(
+      j['item_collected_at']?.toString() ?? '',
+    ),
     deliveryReportedAt: j['delivery_reported_at'] == null
         ? null
         : DateTime.tryParse(j['delivery_reported_at'].toString()),
@@ -156,6 +170,7 @@ class LoadModel extends Equatable {
     requestCount,
     bookingId,
     deliveryReportedAt,
+    itemCollectedAt,
     unloadStops,
   ];
 }

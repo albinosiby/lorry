@@ -128,14 +128,10 @@ String? sessionRedirect(SessionModel session, Uri uri) {
     }
     return Routes.home;
   }
-  if (driver &&
-      (path == Routes.postLoad ||
-          path == Routes.myLoads ||
-          path.endsWith('/edit') ||
-          path.endsWith('/requests') ||
-          path == '/requests')) {
-    return Routes.findLoads;
-  }
+  if (driver && path == Routes.postLoad) return Routes.driverPostLoad;
+  if (driver && path == Routes.myLoads) return Routes.driverPostedLoads;
+  if (!driver && path == Routes.driverPostLoad) return Routes.postLoad;
+  if (!driver && path == Routes.driverPostedLoads) return Routes.myLoads;
   if (!driver && (path == Routes.findLoads || path == Routes.trips)) {
     return Routes.myLoads;
   }
@@ -304,6 +300,34 @@ GoRouter createRouter(SessionCubit session, RouterRefresh refresh) => GoRouter(
       ],
     ),
     GoRoute(
+      path: Routes.driverPostLoad,
+      builder: (context, state) => BlocProvider(
+        create: (_) => di<LoadFormCubit>(),
+        child: const LoadFormScreen(standalone: true),
+      ),
+    ),
+    GoRoute(
+      path: Routes.driverPostedLoads,
+      builder: (context, state) => Scaffold(
+        appBar: AppBar(
+          title: const Text('My Posted Loads'),
+          leading: BackButton(
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go(Routes.profile);
+              }
+            },
+          ),
+        ),
+        body: BlocProvider(
+          create: (_) => di<LoadsCubit>()..load(mine: true),
+          child: const LoadsScreen(mine: true),
+        ),
+      ),
+    ),
+    GoRoute(
       path: '/loads/:loadId',
       builder: (context, state) {
         final id = state.pathParameters['loadId']!;
@@ -329,7 +353,8 @@ GoRouter createRouter(SessionCubit session, RouterRefresh refresh) => GoRouter(
             final id = state.pathParameters['loadId']!;
             return BlocProvider(
               create: (_) =>
-                  di<TripsCubit>()..load(loadId: id, status: 'requested'),
+                  di<TripsCubit>()
+                    ..load(loadId: id, status: 'requested', incoming: true),
               child: TripsScreen(loadId: id, requests: true),
             );
           },
@@ -339,7 +364,8 @@ GoRouter createRouter(SessionCubit session, RouterRefresh refresh) => GoRouter(
     GoRoute(
       path: '/requests',
       builder: (context, state) => BlocProvider(
-        create: (_) => di<TripsCubit>()..load(status: 'requested'),
+        create: (_) =>
+            di<TripsCubit>()..load(status: 'requested', incoming: true),
         child: const TripsScreen(requests: true),
       ),
     ),

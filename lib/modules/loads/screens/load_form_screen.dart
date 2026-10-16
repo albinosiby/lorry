@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:lorry_link/core/state/resource_cubit.dart';
 import 'package:lorry_link/design_system/design_system.dart';
 import 'package:uuid/uuid.dart';
+import '../../../config/routes/routes.dart';
 
 import '../cubit/load_form_cubit.dart';
 import '../models/load_model.dart';
@@ -13,8 +14,9 @@ import '../../../utils/services/place_search_service.dart';
 import '../widgets/location_picker_sheet.dart';
 
 class LoadFormScreen extends StatefulWidget {
-  const LoadFormScreen({super.key, this.id});
+  const LoadFormScreen({super.key, this.id, this.standalone = false});
   final String? id;
+  final bool standalone;
 
   @override
   State<LoadFormScreen> createState() => _LoadFormScreenState();
@@ -90,7 +92,8 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
       unloadLocations.add(TextEditingController(text: stop.location));
       unloadTonnes.add(
         TextEditingController(
-          text: stop.unloadTonnes?.toStringAsFixed(
+          text:
+              stop.unloadTonnes?.toStringAsFixed(
                 stop.unloadTonnes!.truncateToDouble() == stop.unloadTonnes
                     ? 0
                     : 1,
@@ -136,7 +139,8 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
     weight.text = load.weightTonnes.toString();
     vehicleLength = load.requiredVehicleLengthFt?.toStringAsFixed(0);
     note.text = load.specialNote;
-    isNegotiable = load.specialNote.toLowerCase().contains('negotiable') ||
+    isNegotiable =
+        load.specialNote.toLowerCase().contains('negotiable') ||
         load.specialNote.isEmpty;
     date = load.pickupDate;
     pickupTime = load.pickupAt == null
@@ -175,12 +179,18 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
     }
     final budgetAmount = double.tryParse(price.text.trim());
     if (budgetAmount == null || budgetAmount <= 0) {
-      showNotice(context, 'Freight budget is mandatory. Please enter a valid amount.');
+      showNotice(
+        context,
+        'Freight budget is mandatory. Please enter a valid amount.',
+      );
       return;
     }
     final payloadTonnes = double.tryParse(weight.text.trim());
     if (payloadTonnes == null || payloadTonnes <= 0) {
-      showNotice(context, 'Payload weight is mandatory. Please enter a valid weight.');
+      showNotice(
+        context,
+        'Payload weight is mandatory. Please enter a valid weight.',
+      );
       return;
     }
     if (vehicle == null) {
@@ -295,7 +305,11 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
       isNegotiable = true;
       dirty = false;
     });
-    context.push('/loads/$published');
+    if (widget.standalone) {
+      context.pushReplacement('/loads/$published');
+    } else {
+      context.push('/loads/$published');
+    }
   }
 
   String? canonicalLocation(String? value) {
@@ -416,9 +430,29 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
           if (context.mounted) context.pop();
         });
       },
-      child: edit
+      child: edit || widget.standalone
           ? Scaffold(
-              appBar: AppBar(title: const Text('Edit Shipment')),
+              appBar: AppBar(
+                title: Text(edit ? 'Edit Shipment' : 'Post Load'),
+                leading: BackButton(
+                  onPressed: () async {
+                    if (context.canPop()) {
+                      await Navigator.of(context).maybePop();
+                      return;
+                    }
+                    if (dirty &&
+                        !await confirmAction(
+                          context,
+                          'Discard changes?',
+                          'Your unsaved load details will be lost.',
+                          confirm: 'Discard',
+                        )) {
+                      return;
+                    }
+                    if (context.mounted) context.go(Routes.profile);
+                  },
+                ),
+              ),
               body: formBody,
             )
           : formBody,
@@ -436,11 +470,11 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
           end: Alignment.bottomRight,
           colors: edit
               ? (dark
-                  ? [const Color(0xFF1B2D35), const Color(0xFF101B20)]
-                  : [const Color(0xFF1E3A47), const Color(0xFF285366)])
+                    ? [const Color(0xFF1B2D35), const Color(0xFF101B20)]
+                    : [const Color(0xFF1E3A47), const Color(0xFF285366)])
               : (dark
-                  ? [const Color(0xFF132E27), const Color(0xFF0D1E19)]
-                  : [const Color(0xFF193F35), const Color(0xFF265A4B)]),
+                    ? [const Color(0xFF132E27), const Color(0xFF0D1E19)]
+                    : [const Color(0xFF193F35), const Color(0xFF265A4B)]),
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
@@ -470,22 +504,25 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
             children: [
               // Eyebrow badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
-                  color: (edit
-                          ? const Color(0xFF38BDF8)
-                          : const Color(0xFFD5E9A9))
-                      .withValues(alpha: 0.18),
+                  color:
+                      (edit ? const Color(0xFF38BDF8) : const Color(0xFFD5E9A9))
+                          .withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: (edit
-                            ? const Color(0xFF38BDF8)
-                            : const Color(0xFFD5E9A9))
-                        .withValues(alpha: 0.35),
+                    color:
+                        (edit
+                                ? const Color(0xFF38BDF8)
+                                : const Color(0xFFD5E9A9))
+                            .withValues(alpha: 0.35),
                   ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                child: Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Container(
                       width: 6,
@@ -499,7 +536,9 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      edit ? 'EDIT SHIPMENT POSTING' : 'FREIGHT BROADCAST RADAR',
+                      edit
+                          ? 'EDIT SHIPMENT POSTING'
+                          : 'FREIGHT BROADCAST RADAR',
                       style: TextStyle(
                         color: edit
                             ? const Color(0xFFBAE6FD)
@@ -536,7 +575,10 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
               const SizedBox(height: 16),
               // Step Pipeline Indicator
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
@@ -544,8 +586,10 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
                     color: Colors.white.withValues(alpha: 0.12),
                   ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                child: Wrap(
+                  alignment: WrapAlignment.spaceAround,
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     _pipelineStep('1', 'Route Corridor', active: true),
                     Icon(
@@ -621,7 +665,8 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
     return _CardSection(
       stepNumber: '01',
       title: 'Route Corridor',
-      subtitle: 'Specify where goods are picked up and where they are delivered.',
+      subtitle:
+          'Specify where goods are picked up and where they are delivered.',
       icon: Icons.alt_route_rounded,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -672,7 +717,10 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
               padding: const EdgeInsets.only(bottom: 12),
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
@@ -729,10 +777,14 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
   Widget _buildUnloadStopCard(int index) {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.6),
+          color: Theme.of(
+            context,
+          ).colorScheme.outlineVariant.withValues(alpha: 0.6),
         ),
       ),
       padding: const EdgeInsets.all(14),
@@ -826,7 +878,8 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
     return _CardSection(
       stepNumber: '02',
       title: 'Cargo & Vehicle',
-      subtitle: 'Specify what materials are carried and the required truck body.',
+      subtitle:
+          'Specify what materials are carried and the required truck body.',
       icon: Icons.inventory_2_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -878,7 +931,9 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
               controller: weight,
               label: 'Payload weight (tonnes) *',
               hint: 'e.g. 5.5 (Mandatory)',
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               validator: _validateWeight,
             ),
             second: _buildVehicleLengthSelector(context),
@@ -893,8 +948,10 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          spacing: 8,
+          runSpacing: 8,
           children: [
             Text(
               'REQUIRED VEHICLE TYPE',
@@ -938,11 +995,12 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
               }),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
-                  color: isSel
-                      ? cs.primaryContainer
-                      : cs.surface,
+                  color: isSel ? cs.primaryContainer : cs.surface,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isSel
@@ -985,10 +1043,7 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
                   padding: const EdgeInsets.only(top: 6, left: 4),
                   child: Text(
                     field.errorText!,
-                    style: TextStyle(
-                      color: cs.error,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: cs.error, fontSize: 12),
                   ),
                 )
               : const SizedBox.shrink(),
@@ -1002,19 +1057,12 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
       key: ValueKey('length-$vehicleLength-$draftId'),
       initialValue: vehicleLength,
       isExpanded: true,
-      decoration: const InputDecoration(
-        labelText: 'Truck length (optional)',
-      ),
+      decoration: const InputDecoration(labelText: 'Truck length (optional)'),
       items: [
-        const DropdownMenuItem<String>(
-          value: null,
-          child: Text('Any length'),
-        ),
+        const DropdownMenuItem<String>(value: null, child: Text('Any length')),
         ...vehicleLengthOptions.map(
-          (len) => DropdownMenuItem<String>(
-            value: len,
-            child: Text('$len ft body'),
-          ),
+          (len) =>
+              DropdownMenuItem<String>(value: len, child: Text('$len ft body')),
         ),
       ],
       onChanged: (val) {
@@ -1056,8 +1104,9 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
                     final today = DateUtils.dateOnly(DateTime.now());
                     final selected = await showDatePicker(
                       context: context,
-                      initialDate:
-                          date == null || date!.isBefore(today) ? today : date!,
+                      initialDate: date == null || date!.isBefore(today)
+                          ? today
+                          : date!,
                       firstDate: today,
                       lastDate: today.add(const Duration(days: 730)),
                     );
@@ -1103,8 +1152,9 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
             initialValue: date,
             validator: (_) => date == null
                 ? 'Choose a pickup date.'
-                : DateUtils.dateOnly(date!)
-                        .isBefore(DateUtils.dateOnly(DateTime.now()))
+                : DateUtils.dateOnly(
+                    date!,
+                  ).isBefore(DateUtils.dateOnly(DateTime.now()))
                 ? 'Choose today or a future date.'
                 : null,
             builder: (field) => field.hasError
@@ -1137,13 +1187,20 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
           Container(
             decoration: BoxDecoration(
               color: isNegotiable
-                  ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
-                  : Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                  ? Theme.of(
+                      context,
+                    ).colorScheme.primaryContainer.withValues(alpha: 0.3)
+                  : Theme.of(context).colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: isNegotiable
-                    ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.4)
-                    : Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.6),
+                    ? Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.4)
+                    : Theme.of(
+                        context,
+                      ).colorScheme.outlineVariant.withValues(alpha: 0.6),
               ),
             ),
             child: CheckboxListTile(
@@ -1153,9 +1210,14 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
                 dirty = true;
               }),
               controlAffinity: ListTileControlAffinity.leading,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 0,
+              ),
               dense: true,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
               title: const Text(
                 'Price is negotiable',
                 style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
@@ -1187,7 +1249,10 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
                   return Padding(
                     padding: const EdgeInsets.only(right: 6),
                     child: ActionChip(
-                      label: Text(formatted, style: const TextStyle(fontSize: 11)),
+                      label: Text(
+                        formatted,
+                        style: const TextStyle(fontSize: 11),
+                      ),
                       visualDensity: VisualDensity.compact,
                       onPressed: () => setState(() {
                         price.text = val;
@@ -1205,7 +1270,8 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
           AppTextField(
             controller: note,
             label: 'Special transport instructions (optional)',
-            hint: 'e.g. Tarpaulin required, loading dock open till 6 PM, fragile goods',
+            hint:
+                'e.g. Tarpaulin required, loading dock open till 6 PM, fragile goods',
             lines: 2,
             maxLength: 1000,
           ),
@@ -1221,15 +1287,14 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
     ResourceState<LoadFormModel> state,
   ) {
     final cs = Theme.of(context).colorScheme;
-    final hasRoute = pickupText.text.isNotEmpty && destinationText.text.isNotEmpty;
+    final hasRoute =
+        pickupText.text.isNotEmpty && destinationText.text.isNotEmpty;
 
     return Container(
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: cs.outlineVariant.withValues(alpha: 0.7),
-        ),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.7)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -1303,7 +1368,9 @@ class _LoadFormScreenState extends State<LoadFormScreen> {
           // Primary CTA Button
           AppButton(
             label: edit ? 'Save shipment changes' : 'Publish load to market',
-            icon: edit ? Icons.check_circle_outline : Icons.arrow_forward_rounded,
+            icon: edit
+                ? Icons.check_circle_outline
+                : Icons.arrow_forward_rounded,
             busy: state.busy,
             onPressed: save,
           ),
@@ -1335,9 +1402,7 @@ class _CardSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: cs.outlineVariant.withValues(alpha: 0.7),
-        ),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.7)),
       ),
       padding: const EdgeInsets.all(18),
       child: Column(
@@ -1432,20 +1497,20 @@ class _RouteNode extends StatelessWidget {
 
     final (color, icon, title) = switch (nodeType) {
       _RouteNodeType.pickup => (
-          const Color(0xFF2E7D32),
-          Icons.arrow_upward_rounded,
-          'PICKUP ORIGIN'
-        ),
+        const Color(0xFF2E7D32),
+        Icons.arrow_upward_rounded,
+        'PICKUP ORIGIN',
+      ),
       _RouteNodeType.waypoint => (
-          const Color(0xFFEF6C00),
-          Icons.location_on_outlined,
-          'UNLOAD STOP'
-        ),
+        const Color(0xFFEF6C00),
+        Icons.location_on_outlined,
+        'UNLOAD STOP',
+      ),
       _RouteNodeType.destination => (
-          const Color(0xFFC62828),
-          Icons.location_on_rounded,
-          'FINAL DESTINATION'
-        ),
+        const Color(0xFFC62828),
+        Icons.location_on_rounded,
+        'FINAL DESTINATION',
+      ),
     };
 
     return Container(
@@ -1476,13 +1541,15 @@ class _RouteNode extends StatelessWidget {
                 child: Icon(icon, color: color, size: 13),
               ),
               const SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.1,
+              Flexible(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.1,
+                  ),
                 ),
               ),
             ],
@@ -1610,9 +1677,11 @@ class _RouteNode extends StatelessWidget {
                         children: [
                           Icon(Icons.info_outline, size: 14, color: cs.error),
                           const SizedBox(width: 4),
-                          Text(
-                            field.errorText!,
-                            style: TextStyle(color: cs.error, fontSize: 11),
+                          Expanded(
+                            child: Text(
+                              field.errorText!,
+                              style: TextStyle(color: cs.error, fontSize: 11),
+                            ),
                           ),
                         ],
                       ),
@@ -1671,13 +1740,15 @@ class _ScheduleTile extends StatelessWidget {
               children: [
                 Icon(icon, size: 16, color: iconColor),
                 const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.1,
-                    color: cs.onSurfaceVariant,
+                Flexible(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.1,
+                      color: cs.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ],
@@ -1685,19 +1756,13 @@ class _ScheduleTile extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               value,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-              ),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 2),
             Text(
               subtitle,
-              style: TextStyle(
-                fontSize: 11.5,
-                color: cs.onSurfaceVariant,
-              ),
+              style: TextStyle(fontSize: 11.5, color: cs.onSurfaceVariant),
             ),
           ],
         ),

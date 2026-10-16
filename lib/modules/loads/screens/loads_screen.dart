@@ -84,6 +84,14 @@ class _LoadsScreenState extends State<LoadsScreen> {
           else
             _buildDriverMarketplaceBanner(context, isDark),
           const SizedBox(height: 18),
+          if (widget.mine) ...[
+            OutlinedButton.icon(
+              onPressed: () => context.push('/loads/new'),
+              icon: const Icon(Icons.add),
+              label: const Text('Post another load'),
+            ),
+            const SizedBox(height: 12),
+          ],
 
           // Driver Controls: Search bar, quick vehicle filter, and active filter tags
           if (!widget.mine) ...[
@@ -127,8 +135,10 @@ class _LoadsScreenState extends State<LoadsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // Section Title & Counter
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
                         Text(
                           widget.mine
@@ -169,8 +179,11 @@ class _LoadsScreenState extends State<LoadsScreen> {
                           if (mounted) await refresh();
                         },
                         onTrackBooking: widget.mine
-                            ? (load) =>
-                                context.push('/tracking/${load.bookingId}')
+                            ? (load) => context.push(
+                                load.deliveryReportedAt != null
+                                    ? '/bookings/${load.bookingId}'
+                                    : '/tracking/${load.bookingId}',
+                              )
                             : null,
                       ),
 
@@ -247,7 +260,10 @@ class _LoadsScreenState extends State<LoadsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -258,7 +274,9 @@ class _LoadsScreenState extends State<LoadsScreen> {
                           color: const Color(0xFFD5E9A9).withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: const Color(0xFFD5E9A9).withValues(alpha: 0.4),
+                            color: const Color(
+                              0xFFD5E9A9,
+                            ).withValues(alpha: 0.4),
                           ),
                         ),
                         child: const Row(
@@ -282,7 +300,6 @@ class _LoadsScreenState extends State<LoadsScreen> {
                           ],
                         ),
                       ),
-                      const Spacer(),
                       TextButton.icon(
                         style: TextButton.styleFrom(
                           foregroundColor: const Color(0xFFD5E9A9),
@@ -343,8 +360,10 @@ class _LoadsScreenState extends State<LoadsScreen> {
                         color: Colors.white.withValues(alpha: 0.1),
                       ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    child: Wrap(
+                      alignment: WrapAlignment.spaceAround,
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
                         _buildMetricCol(
                           'MARKET COVERAGE',
@@ -406,11 +425,7 @@ class _LoadsScreenState extends State<LoadsScreen> {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 11,
-              color: color ?? const Color(0xFFD5E9A9),
-            ),
+            Icon(icon, size: 11, color: color ?? const Color(0xFFD5E9A9)),
             const SizedBox(width: 4),
             Text(
               label,
@@ -510,8 +525,8 @@ class _LoadsScreenState extends State<LoadsScreen> {
                   color: _activeFilterCount > 0
                       ? const Color(0xFF193F35)
                       : (isDark
-                          ? Colors.white.withValues(alpha: 0.08)
-                          : Colors.black.withValues(alpha: 0.08)),
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : Colors.black.withValues(alpha: 0.08)),
                 ),
               ),
               child: Row(
@@ -612,8 +627,8 @@ class _LoadsScreenState extends State<LoadsScreen> {
                   color: isSelected
                       ? const Color(0xFF193F35)
                       : (isDark
-                          ? Colors.white.withValues(alpha: 0.08)
-                          : Colors.black.withValues(alpha: 0.06)),
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : Colors.black.withValues(alpha: 0.06)),
                 ),
               ),
               onSelected: (_) {
@@ -641,71 +656,79 @@ class _LoadsScreenState extends State<LoadsScreen> {
     final tags = <Widget>[];
 
     if (filter.pickup != null && filter.pickup!.isNotEmpty) {
-      tags.add(_buildFilterTag(
-        'Origin: ${filter.pickup}',
-        () => setState(() {
-          filter = LoadFilter(
-            pickup: null,
-            destination: filter.destination,
-            vehicle: filter.vehicle,
-            maxWeightTonnes: filter.maxWeightTonnes,
-            minVehicleLengthFt: filter.minVehicleLengthFt,
-          );
-          refresh();
-        }),
-        isDark,
-      ));
+      tags.add(
+        _buildFilterTag(
+          'Origin: ${filter.pickup}',
+          () => setState(() {
+            filter = LoadFilter(
+              pickup: null,
+              destination: filter.destination,
+              vehicle: filter.vehicle,
+              maxWeightTonnes: filter.maxWeightTonnes,
+              minVehicleLengthFt: filter.minVehicleLengthFt,
+            );
+            refresh();
+          }),
+          isDark,
+        ),
+      );
     }
 
     if (filter.destination != null && filter.destination!.isNotEmpty) {
-      tags.add(_buildFilterTag(
-        'Drop: ${filter.destination}',
-        () => setState(() {
-          filter = LoadFilter(
-            pickup: filter.pickup,
-            destination: null,
-            vehicle: filter.vehicle,
-            maxWeightTonnes: filter.maxWeightTonnes,
-            minVehicleLengthFt: filter.minVehicleLengthFt,
-          );
-          refresh();
-        }),
-        isDark,
-      ));
+      tags.add(
+        _buildFilterTag(
+          'Drop: ${filter.destination}',
+          () => setState(() {
+            filter = LoadFilter(
+              pickup: filter.pickup,
+              destination: null,
+              vehicle: filter.vehicle,
+              maxWeightTonnes: filter.maxWeightTonnes,
+              minVehicleLengthFt: filter.minVehicleLengthFt,
+            );
+            refresh();
+          }),
+          isDark,
+        ),
+      );
     }
 
     if (filter.maxWeightTonnes != null) {
-      tags.add(_buildFilterTag(
-        '≤ ${filter.maxWeightTonnes!.toStringAsFixed(0)} t',
-        () => setState(() {
-          filter = LoadFilter(
-            pickup: filter.pickup,
-            destination: filter.destination,
-            vehicle: filter.vehicle,
-            maxWeightTonnes: null,
-            minVehicleLengthFt: filter.minVehicleLengthFt,
-          );
-          refresh();
-        }),
-        isDark,
-      ));
+      tags.add(
+        _buildFilterTag(
+          '≤ ${filter.maxWeightTonnes!.toStringAsFixed(0)} t',
+          () => setState(() {
+            filter = LoadFilter(
+              pickup: filter.pickup,
+              destination: filter.destination,
+              vehicle: filter.vehicle,
+              maxWeightTonnes: null,
+              minVehicleLengthFt: filter.minVehicleLengthFt,
+            );
+            refresh();
+          }),
+          isDark,
+        ),
+      );
     }
 
     if (filter.minVehicleLengthFt != null) {
-      tags.add(_buildFilterTag(
-        '≤ ${filter.minVehicleLengthFt!.toStringAsFixed(0)} ft',
-        () => setState(() {
-          filter = LoadFilter(
-            pickup: filter.pickup,
-            destination: filter.destination,
-            vehicle: filter.vehicle,
-            maxWeightTonnes: filter.maxWeightTonnes,
-            minVehicleLengthFt: null,
-          );
-          refresh();
-        }),
-        isDark,
-      ));
+      tags.add(
+        _buildFilterTag(
+          '≤ ${filter.minVehicleLengthFt!.toStringAsFixed(0)} ft',
+          () => setState(() {
+            filter = LoadFilter(
+              pickup: filter.pickup,
+              destination: filter.destination,
+              vehicle: filter.vehicle,
+              maxWeightTonnes: filter.maxWeightTonnes,
+              minVehicleLengthFt: null,
+            );
+            refresh();
+          }),
+          isDark,
+        ),
+      );
     }
 
     return Row(
@@ -779,30 +802,28 @@ class _LoadsScreenState extends State<LoadsScreen> {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: [
-        null,
-        'open',
-        'assigned',
-        'in_transit',
-        'completed',
-        'cancelled',
-      ]
-          .map(
-            (status) => ChoiceChip(
-              label: Text(status == null ? 'All' : statusLabel(status)),
-              selected: filter.status == status,
-              selectedColor: const Color(0xFF193F35),
-              labelStyle: TextStyle(
-                color: filter.status == status ? const Color(0xFFD5E9A9) : null,
-                fontWeight: filter.status == status ? FontWeight.bold : null,
-              ),
-              onSelected: (_) {
-                setState(() => filter = LoadFilter(status: status));
-                refresh();
-              },
-            ),
-          )
-          .toList(),
+      children:
+          [null, 'open', 'assigned', 'in_transit', 'completed', 'cancelled']
+              .map(
+                (status) => ChoiceChip(
+                  label: Text(status == null ? 'All' : statusLabel(status)),
+                  selected: filter.status == status,
+                  selectedColor: const Color(0xFF193F35),
+                  labelStyle: TextStyle(
+                    color: filter.status == status
+                        ? const Color(0xFFD5E9A9)
+                        : null,
+                    fontWeight: filter.status == status
+                        ? FontWeight.bold
+                        : null,
+                  ),
+                  onSelected: (_) {
+                    setState(() => filter = LoadFilter(status: status));
+                    refresh();
+                  },
+                ),
+              )
+              .toList(),
     );
   }
 
@@ -839,13 +860,10 @@ class _LoadsScreenState extends State<LoadsScreen> {
             widget.mine
                 ? 'No shipments posted yet'
                 : searchQuery.isNotEmpty
-                    ? 'No freight matching “$searchQuery”'
-                    : 'No matching loads on this route',
+                ? 'No freight matching “$searchQuery”'
+                : 'No matching loads on this route',
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-            ),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 6),
           Text(
@@ -1011,11 +1029,13 @@ class _LoadFiltersSheetState extends State<_LoadFiltersSheet> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  'Route & Truck Filters',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+                Flexible(
+                  child: Text(
+                    'Route & Truck Filters',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -1057,7 +1077,10 @@ class _LoadFiltersSheetState extends State<_LoadFiltersSheet> {
                 ),
               ),
               items: [
-                const DropdownMenuItem(value: null, child: Text('Any Vehicle Type')),
+                const DropdownMenuItem(
+                  value: null,
+                  child: Text('Any Vehicle Type'),
+                ),
                 ...vehicleTypes.map(
                   (item) => DropdownMenuItem(value: item, child: Text(item)),
                 ),
@@ -1071,7 +1094,9 @@ class _LoadFiltersSheetState extends State<_LoadFiltersSheet> {
               controller: capacity,
               label: 'Max Cargo Weight (Tonnes)',
               hint: 'Loads up to this payload weight',
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
             ),
             const SizedBox(height: 14),
 
@@ -1080,7 +1105,9 @@ class _LoadFiltersSheetState extends State<_LoadFiltersSheet> {
               controller: length,
               label: 'Minimum Truck Length (ft)',
               hint: 'Deck length required',
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
             ),
             const SizedBox(height: 20),
 
@@ -1111,10 +1138,7 @@ class _LoadFiltersSheetState extends State<_LoadFiltersSheet> {
               ),
               child: const Text(
                 'Apply Route Filters',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 14,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
               ),
             ),
             const SizedBox(height: 10),

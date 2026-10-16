@@ -14,6 +14,8 @@ import 'package:lorry_link/modules/loads/repositories/load_repository.dart';
 import 'package:lorry_link/modules/bookings/repositories/booking_repository.dart';
 import 'package:lorry_link/modules/notifications/repositories/notification_repository.dart';
 import 'package:lorry_link/modules/home/repositories/home_repository.dart';
+import 'package:lorry_link/modules/vehicles/repositories/vehicle_repository.dart';
+import 'package:lorry_link/modules/vehicles/models/vehicle_model.dart';
 
 void main() {
   test(
@@ -33,6 +35,7 @@ void main() {
         ),
       );
       final services = clients.map(SupabaseService.new).toList();
+      final truckIds = <String>[];
       try {
         for (var i = 0; i < 3; i++) {
           final auth = AuthRepository(services[i]);
@@ -42,13 +45,31 @@ void main() {
           expect(auth.signedIn, isTrue);
           await ProfileRepository(services[i]).save(
             name: 'QA ${i == 0 ? 'Shipper' : 'Driver $i'}',
-            phone: '+91000000000$i',
+            phone: '+91987654321$i',
             role: i == 0 ? UserRole.shipper : UserRole.driver,
           );
           expect(
             (await auth.profile())?.role,
             i == 0 ? UserRole.shipper : UserRole.driver,
           );
+          if (i > 0) {
+            final fleet = VehicleRepository(services[i]);
+            final existing = await fleet.list();
+            final qa = existing
+                .where((v) => v.registrationNumber == 'QA 01 AB 1234')
+                .firstOrNull;
+            final truck = await fleet.save(
+              VehicleDraft(
+                id: qa?.id,
+                registrationNumber: 'QA 01 AB 1234',
+                vehicleType: 'Open truck',
+                bodyType: 'Open truck',
+                lengthFt: 20,
+                capacityTonnes: 10,
+              ),
+            );
+            truckIds.add(truck.id);
+          }
         }
         final loads = LoadRepository(services[0]);
         final driverLoads = LoadRepository(services[1]);
@@ -63,6 +84,10 @@ void main() {
           vehicle: 'Open truck',
           date: DateTime.now().add(const Duration(days: 7)),
           price: 12000,
+          pickupLatitude: 10,
+          pickupLongitude: 76,
+          destinationLatitude: 12,
+          destinationLongitude: 77,
         );
         final load = await loads.save(draft);
         expect((await loads.save(draft)).id, load.id);
@@ -72,9 +97,18 @@ void main() {
           )).any((l) => l.id == load.id),
           isTrue,
         );
-        final first = await driverBookings.request(load.id),
-            second = await otherBookings.request(load.id);
-        expect(await driverBookings.request(load.id), first);
+        final first = await driverBookings.request(
+              load.id,
+              vehicleId: truckIds[0],
+            ),
+            second = await otherBookings.request(
+              load.id,
+              vehicleId: truckIds[1],
+            );
+        expect(
+          await driverBookings.request(load.id, vehicleId: truckIds[0]),
+          first,
+        );
         await expectLater(
           otherBookings.get(first),
           throwsA(isA<AppException>()),
@@ -103,13 +137,29 @@ void main() {
           winningDriver.transition(winner, 'completed'),
           throwsA(isA<AppException>()),
         );
-        await winningDriver.transition(winner, 'in_transit');
+        await winningDriver.transition(
+          winner,
+          'item_collected',
+          latitude: 10,
+          longitude: 76,
+        );
+        await winningDriver.transition(
+          winner,
+          'in_transit',
+          latitude: 10,
+          longitude: 76,
+        );
         await winningDriver.transition(winner, 'delivery_reported');
+        await winningDriver.recordPayment(
+          winner,
+          12000,
+          requestId: const Uuid().v4(),
+        );
         await bookingOwner.transition(winner, 'completed');
         final completed = await winningDriver.get(winner);
         expect(completed.status, 'completed');
         expect(completed.load.status, 'completed');
-        expect(completed.events.length, 5);
+        expect(completed.events.length, 7);
         expect(
           (await HomeRepository(services[0]).get()).completed,
           greaterThanOrEqualTo(1),

@@ -23,10 +23,8 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        // Keep the identifier used by the LORRY LINK app already installed on
-        // the driver's phone. A different ID creates a second, stale app icon.
-        applicationId = "com.lorrylink.app"
+        // New Android identity. Keep this stable for future app updates.
+        applicationId = "com.newlorrylink.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         // Image/document pickers require Android 7.0+. This also covers the

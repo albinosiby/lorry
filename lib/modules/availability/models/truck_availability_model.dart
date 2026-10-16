@@ -12,11 +12,13 @@ class TruckAvailabilityModel extends Equatable {
     this.preferredDestination,
     this.note = '',
     this.vehicle,
+    this.busy = false,
   });
   final String id, driverId, vehicleId, currentLocation, status, note;
   final DateTime availableFrom;
   final String? preferredDestination;
   final VehicleModel? vehicle;
+  final bool busy;
   factory TruckAvailabilityModel.fromJson(Map<String, dynamic> json) {
     final vehicleJson = json['vehicle'];
     return TruckAvailabilityModel(
@@ -26,6 +28,7 @@ class TruckAvailabilityModel extends Equatable {
       currentLocation: json['current_location'],
       availableFrom: DateTime.parse(json['available_from']),
       status: json['status'],
+      busy: json['busy'] == true,
       preferredDestination: json['preferred_destination'],
       note: json['note'] ?? '',
       vehicle:
@@ -44,6 +47,7 @@ class TruckAvailabilityModel extends Equatable {
     status,
     preferredDestination,
     note,
+    busy,
   ];
 }
 

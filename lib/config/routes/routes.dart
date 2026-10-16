@@ -10,6 +10,8 @@ abstract final class Routes {
       findLoads = '/loads/find',
       myLoads = '/loads/mine',
       postLoad = '/loads/new',
+      driverPostLoad = '/driver/post-load',
+      driverPostedLoads = '/driver/posted-loads',
       trips = '/trips',
       profile = '/profile',
       notifications = '/notifications',

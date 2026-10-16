@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../../bookings/widgets/trip_directions.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lorry_link/design_system/design_system.dart';
@@ -8,6 +9,7 @@ import '../../../config/routes/routes.dart';
 import '../../auth/cubit/session_cubit.dart';
 import '../../bookings/cubit/booking_details_cubit.dart';
 import '../../bookings/models/booking_model.dart';
+import '../../bookings/widgets/truck_picker.dart';
 import '../../bookings/models/booking_screen_models.dart';
 import '../../profile/models/profile_model.dart';
 import '../../loads/models/load_model.dart';
@@ -89,6 +91,31 @@ class HomeScreen extends StatelessWidget {
 
                 // 4. Quick Services / Tools Row
                 _buildQuickTools(context, shipper),
+                if (!shipper) ...[
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          context.go(Routes.profile);
+                          context.push(Routes.driverPostLoad);
+                        },
+                        icon: const Icon(Icons.add_box_outlined),
+                        label: const Text('Post Load'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          context.go(Routes.profile);
+                          context.push(Routes.driverPostedLoads);
+                        },
+                        icon: const Icon(Icons.inventory_2_outlined),
+                        label: const Text('My Posted Loads'),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 24),
 
                 // 5. Reactive Home Content (Stats, Urgent Cards, Loads)
@@ -272,7 +299,7 @@ class HomeScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      shipper ? 'CARGO SHIPPER' : 'FLEET DRIVER',
+                      shipper ? 'CUSTOMER' : 'FLEET DRIVER',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
@@ -437,15 +464,17 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      available ? 'LIVE GPS ACTIVE' : 'LOCATION REQUIRED',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.8,
-                        color: available
-                            ? const Color(0xFF2E7D32)
-                            : const Color(0xFFE65100),
+                    Flexible(
+                      child: Text(
+                        available ? 'LIVE GPS ACTIVE' : 'LOCATION REQUIRED',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.8,
+                          color: available
+                              ? const Color(0xFF2E7D32)
+                              : const Color(0xFFE65100),
+                        ),
                       ),
                     ),
                   ],
@@ -646,7 +675,7 @@ class HomeScreen extends StatelessWidget {
             _statCard(
               context,
               value: '${m.active}',
-              label: 'On The Road',
+              label: 'Active bookings',
               icon: Icons.alt_route_rounded,
               tint: AppTheme.orange,
               width: width,
@@ -805,7 +834,9 @@ class HomeScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
                     children: [
                       Text(
                         '$pending ${shipper ? 'Incoming Requests' : 'Pending Approvals'}',
@@ -997,7 +1028,7 @@ class HomeScreen extends StatelessWidget {
 
           if (trip.deliveryPendingConfirmation) ...[
             const Text(
-              'Delivery reported. Income recorded. Awaiting customer confirmation.',
+              'Delivery reported. Awaiting customer confirmation. Record payment in Booking details.',
             ),
             TextButton.icon(
               onPressed: () => context.push('/bookings/${trip.id}'),
@@ -1296,7 +1327,7 @@ class HomeScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              const StatusBadge('Accepted'),
+              StatusBadge(statusLabel(trip.displayStatus)),
             ],
           ),
           const SizedBox(height: 16),
@@ -1327,7 +1358,7 @@ class HomeScreen extends StatelessWidget {
             icon: const Icon(Icons.directions_outlined),
             label: Text(
               trip.itemsCollected
-                  ? 'Navigate to destination'
+                  ? 'Navigate delivery route'
                   : 'Navigate to pickup',
             ),
           ),
@@ -1544,7 +1575,7 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(width: 8),
             Flexible(
               child: Text(
-                'Pull to refresh • Live status syncing every 45s',
+                'Live status updates • Pull to refresh',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -1566,6 +1597,9 @@ class HomeScreen extends StatelessWidget {
     BuildContext context,
     String bookingId,
   ) async {
+    if (!await ensureBookingTruck(context, bookingId) || !context.mounted) {
+      return;
+    }
     final booking = context.read<BookingDetailsCubit>();
     final location = await booking.requestLocationForTrip();
     if (location == null || !context.mounted) return;
@@ -1590,6 +1624,7 @@ class HomeScreen extends StatelessWidget {
   }
 
   Future<void> _collectItems(BuildContext context, String id) async {
+    if (!await ensureBookingTruck(context, id) || !context.mounted) return;
     final cubit = context.read<BookingDetailsCubit>();
     final location = await cubit.requestLocationForTrip();
     if (location == null || !context.mounted) return;
@@ -1622,260 +1657,25 @@ class HomeScreen extends StatelessWidget {
   Future<void> _openDestinationInGoogleMaps(
     BuildContext context,
     BookingModel trip,
-  ) async {
-    final opened = await MapNavigationService().openDestination(
-      destinationLabel: trip.load.destination,
-      latitude: trip.load.destinationLatitude,
-      longitude: trip.load.destinationLongitude,
-    );
-    if (context.mounted && !opened) {
-      showNotice(context, 'Could not open Google Maps.');
-    }
-  }
+  ) => openTripDirections(context, trip);
 
   Future<void> _showDeliverySummaryDialog(
     BuildContext context,
     BookingModel trip,
   ) async {
-    final expectedPrice = trip.load.price ?? 0;
-    final collected = await showModalBottomSheet<double>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => _DeliverySummarySheet(
-        trip: trip,
-        defaultAmount: expectedPrice > 0 ? expectedPrice : null,
-      ),
+    if (!await confirmAction(
+          context,
+          'Report delivery?',
+          'Confirm all goods have been unloaded. Payment collection is a separate action in Booking details.',
+        ) ||
+        !context.mounted) {
+      return;
+    }
+    final ok = await context.read<BookingDetailsCubit>().reportDelivery(
+      trip.id,
     );
-    if (collected == null || !context.mounted) return;
-    final ok = await context
-        .read<BookingDetailsCubit>()
-        .reportDeliveryWithCollection(trip.id, collected);
     if (ok && context.mounted) {
       await context.read<HomeCubit>().load(includeDriverTools: true);
-      if (!context.mounted) return;
-      showNotice(
-        context,
-        'Delivery reported! ₹${collected.toStringAsFixed(0)} added to Finance tracker.',
-      );
     }
-  }
-}
-
-class _DeliverySummarySheet extends StatefulWidget {
-  const _DeliverySummarySheet({required this.trip, this.defaultAmount});
-
-  final BookingModel trip;
-  final double? defaultAmount;
-
-  @override
-  State<_DeliverySummarySheet> createState() => _DeliverySummarySheetState();
-}
-
-class _DeliverySummarySheetState extends State<_DeliverySummarySheet> {
-  final form = GlobalKey<FormState>();
-  late final amountController = TextEditingController(
-    text: widget.defaultAmount == null
-        ? ''
-        : widget.defaultAmount!.toStringAsFixed(
-            widget.defaultAmount!.truncateToDouble() == widget.defaultAmount
-                ? 0
-                : 2,
-          ),
-  );
-
-  @override
-  void dispose() {
-    amountController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
-    final trip = widget.trip;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF14241D) : cs.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      padding: EdgeInsets.fromLTRB(
-        22,
-        22,
-        22,
-        MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: Form(
-        key: form,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Handle bar
-            Center(
-              child: Container(
-                width: 44,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: cs.onSurfaceVariant.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
-            const SizedBox(height: 18),
-
-            // Header
-            Row(
-              children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2E7D32).withValues(alpha: 0.16),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.task_alt_rounded,
-                    color: Color(0xFF2E7D32),
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Delivery Summary & Finance',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 18,
-                        ),
-                      ),
-                      Text(
-                        'Record freight collection to complete this trip',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: cs.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-
-            // Shipment Overview Card
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF1B2D26)
-                    : cs.surfaceContainerHighest.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: cs.outlineVariant.withValues(alpha: 0.5),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  RouteSummary(trip.load.pickup, trip.load.destination),
-                  const SizedBox(height: 10),
-                  const Divider(height: 1),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '${trip.load.cargo} · ${trip.load.vehicle}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: cs.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (widget.defaultAmount != null &&
-                          widget.defaultAmount! > 0)
-                        Text(
-                          'Agreed: ₹${widget.defaultAmount!.toStringAsFixed(0)}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF2E7D32),
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 18),
-
-            // Amount Field
-            AppTextField(
-              controller: amountController,
-              label: 'Amount Collected (₹) *',
-              hint: 'Enter freight money collected',
-              prefixText: '₹ ',
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              validator: (v) {
-                final a = double.tryParse(v?.trim() ?? '');
-                return a == null || a <= 0
-                    ? 'Enter the freight amount collected.'
-                    : null;
-              },
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'This payment will be automatically added as positive income into your Finance tracker.',
-              style: TextStyle(
-                fontSize: 11.5,
-                color: cs.onSurfaceVariant,
-                height: 1.3,
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Submit Button
-            FilledButton.icon(
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF2E7D32),
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              icon: const Icon(Icons.check_circle_outline, size: 20),
-              label: const Text(
-                'Confirm Delivery & Save Income',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5),
-              ),
-              onPressed: () {
-                if (!form.currentState!.validate()) return;
-                final collectedAmount = double.parse(
-                  amountController.text.trim(),
-                );
-                Navigator.pop(context, collectedAmount);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

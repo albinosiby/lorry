@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/trip_directions.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -10,6 +11,8 @@ import '../../loads/models/load_model.dart';
 import '../cubit/booking_details_cubit.dart';
 import '../models/booking_model.dart';
 import '../models/booking_screen_models.dart';
+import '../widgets/truck_picker.dart';
+import '../widgets/payment_collection_sheet.dart';
 
 class BookingDetailsScreen extends StatelessWidget {
   const BookingDetailsScreen({super.key, required this.id});
@@ -23,6 +26,7 @@ class BookingDetailsScreen extends StatelessWidget {
     String message,
   ) async {
     if (status == 'item_collected') {
+      if (!await ensureBookingTruck(context, id) || !context.mounted) return;
       final cubit = context.read<BookingDetailsCubit>();
       final location = await cubit.requestLocationForTrip();
       if (location == null || !context.mounted) return;
@@ -37,6 +41,7 @@ class BookingDetailsScreen extends StatelessWidget {
   }
 
   Future<void> startTrip(BuildContext context) async {
+    if (!await ensureBookingTruck(context, id) || !context.mounted) return;
     final cubit = context.read<BookingDetailsCubit>();
     final location = await cubit.requestLocationForTrip();
     if (location == null || !context.mounted) return;
@@ -60,15 +65,16 @@ class BookingDetailsScreen extends StatelessWidget {
     BuildContext context,
     BookingModel booking,
   ) async {
-    final amount = await showModalBottomSheet<double>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => _CollectedAmountSheet(initialAmount: booking.load.price),
-    );
-    if (amount == null || !context.mounted) return;
+    if (!await confirmAction(
+          context,
+          'Report delivery?',
+          'Confirm all goods have been unloaded. The customer will be asked to confirm receipt. Record any payment separately.',
+        ) ||
+        !context.mounted) {
+      return;
+    }
     final cubit = context.read<BookingDetailsCubit>();
-    if (await cubit.reportDeliveryWithCollection(id, amount) &&
-        context.mounted) {
+    if (await cubit.reportDelivery(id) && context.mounted) {
       await cubit.load(id);
     }
   }
@@ -144,7 +150,14 @@ class BookingDetailsScreen extends StatelessWidget {
                 }
                 if (!context.mounted) return;
                 final cubit = context.read<BookingDetailsCubit>();
-                if (await cubit.reRequest(booking.load.id)) {
+                final trucks = await cubit.matchingTrucks(booking.load);
+                if (!context.mounted) return;
+                final truck = await chooseBookingTruck(context, trucks);
+                if (truck == null) return;
+                if (await cubit.reRequest(
+                  booking.load.id,
+                  vehicleId: truck.id,
+                )) {
                   await cubit.load(id);
                 }
               },
@@ -213,6 +226,8 @@ class _BookingContent extends StatelessWidget {
         onCancel: onCancel,
         onReRequest: onReRequest,
       ),
+      const SizedBox(height: 12),
+      _WorkflowSummary(booking: booking, isCustomer: isCustomer, busy: busy),
       const SizedBox(height: 16),
       _SectionCard(
         title: 'Journey',
@@ -411,6 +426,136 @@ class _BookingContent extends StatelessWidget {
   };
 }
 
+class _WorkflowSummary extends StatelessWidget {
+  const _WorkflowSummary({
+    required this.booking,
+    required this.isCustomer,
+    required this.busy,
+  });
+  final BookingModel booking;
+  final bool isCustomer, busy;
+  @override
+  Widget build(BuildContext context) => _SectionCard(
+    title: 'Truck, delivery & payment',
+    icon: Icons.fact_check_outlined,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('Stage: ${statusLabel(booking.displayStatus)}'),
+        Text(
+          booking.vehicle == null
+              ? (booking.status == 'requested' || booking.status == 'accepted'
+                    ? 'Truck selection required'
+                    : 'Truck details not recorded for this booking')
+              : '${booking.vehicle!.registrationNumber} · ${booking.vehicle!.vehicleType} · ${booking.vehicle!.capacityTonnes} t',
+        ),
+        if (!isCustomer &&
+            booking.vehicleId == null &&
+            (booking.status == 'requested' || booking.status == 'accepted'))
+          OutlinedButton(
+            onPressed: busy
+                ? null
+                : () => ensureBookingTruck(context, booking.id),
+            child: const Text('Select assigned truck'),
+          ),
+        const Divider(),
+        Text('Payment: ${booking.paymentLabel}'),
+        Text(
+          'Agreed freight: ${booking.freight == null ? 'Not set' : '₹${booking.freight!.toStringAsFixed(2)}'}',
+        ),
+        Text('Collected: ₹${booking.amountCollected.toStringAsFixed(2)}'),
+        if (booking.balance != null)
+          Text('Balance: ₹${booking.balance!.toStringAsFixed(2)}'),
+        if (!isCustomer && booking.canRecordPayment)
+          FilledButton.icon(
+            onPressed: busy
+                ? null
+                : () => collectBookingPayment(context, booking),
+            icon: const Icon(Icons.payments_outlined),
+            label: const Text('Record payment collected'),
+          ),
+        if (booking.deliveryIssue != null)
+          Text(
+            'Delivery issue: ${booking.deliveryIssue}',
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ),
+        if (isCustomer && booking.deliveryPendingConfirmation)
+          TextButton(
+            onPressed: busy
+                ? null
+                : () async {
+                    final reason = await cancellationReason(
+                      context,
+                      title: 'Report delivery issue',
+                      fieldLabel: 'Describe the issue',
+                      confirmLabel: 'Report issue',
+                    );
+                    if (reason != null && context.mounted) {
+                      await context.read<BookingDetailsCubit>().reportIssue(
+                        booking.id,
+                        reason,
+                      );
+                    }
+                  },
+            child: const Text('Report delivery issue'),
+          ),
+        if (!isCustomer &&
+            booking.isLiveTrip &&
+            booking.load.unloadStops.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          const Text(
+            'At each stop, mark Unloaded here. Reopen directions to skip completed stops.',
+          ),
+          OutlinedButton.icon(
+            onPressed: busy ? null : () => openTripDirections(context, booking),
+            icon: const Icon(Icons.directions_outlined),
+            label: const Text('Navigate delivery route'),
+          ),
+        ],
+        for (var i = 0; i < booking.load.unloadStops.length; i++)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(
+              booking.unloadedStopIndices.contains(i)
+                  ? Icons.check_circle_outline
+                  : Icons.inventory_2_outlined,
+            ),
+            title: Text(
+              'Stop ${i + 1}: ${booking.load.unloadStops[i].location}',
+            ),
+            subtitle: Text(
+              booking.unloadedStopIndices.contains(i)
+                  ? 'Unloaded'
+                  : 'Unloading pending',
+            ),
+            trailing:
+                !isCustomer &&
+                    booking.isLiveTrip &&
+                    !booking.unloadedStopIndices.contains(i)
+                ? TextButton(
+                    onPressed: busy
+                        ? null
+                        : () async {
+                            if (await confirmAction(
+                                  context,
+                                  'Confirm unloading?',
+                                  'Confirm goods for this stop have been unloaded.',
+                                ) &&
+                                context.mounted) {
+                              await context
+                                  .read<BookingDetailsCubit>()
+                                  .markStopUnloaded(booking.id, i);
+                            }
+                          },
+                    child: const Text('Unloaded'),
+                  )
+                : null,
+          ),
+      ],
+    ),
+  );
+}
+
 class _StatusHero extends StatelessWidget {
   const _StatusHero({required this.booking, required this.isCustomer});
   final BookingModel booking;
@@ -418,10 +563,7 @@ class _StatusHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final status =
-        booking.deliveryReportedAt != null && booking.status == 'in_transit'
-        ? 'Delivery reported'
-        : statusLabel(booking.status);
+    final status = statusLabel(booking.displayStatus);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -445,7 +587,13 @@ class _StatusHero extends StatelessWidget {
                   ),
                 ),
               ),
-              StatusBadge(status),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: StatusBadge(status),
+              ),
             ],
           ),
           const SizedBox(height: 20),
@@ -948,81 +1096,6 @@ class _NextStepCard extends StatelessWidget {
     }
     return const [];
   }
-}
-
-class _CollectedAmountSheet extends StatefulWidget {
-  const _CollectedAmountSheet({this.initialAmount});
-  final double? initialAmount;
-
-  @override
-  State<_CollectedAmountSheet> createState() => _CollectedAmountSheetState();
-}
-
-class _CollectedAmountSheetState extends State<_CollectedAmountSheet> {
-  final form = GlobalKey<FormState>();
-  late final TextEditingController amount;
-
-  @override
-  void initState() {
-    super.initState();
-    final value = widget.initialAmount;
-    amount = TextEditingController(
-      text: value == null
-          ? ''
-          : value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 2),
-    );
-  }
-
-  @override
-  void dispose() {
-    amount.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: EdgeInsets.fromLTRB(
-      20,
-      24,
-      20,
-      MediaQuery.viewInsetsOf(context).bottom + 24,
-    ),
-    child: Form(
-      key: form,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Complete delivery',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Enter the freight amount you collected. It will be saved as income in your Finance tracker.',
-          ),
-          const SizedBox(height: 20),
-          AppTextField(
-            controller: amount,
-            label: 'Amount collected (₹)',
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            validator: (value) => (double.tryParse(value ?? '') ?? 0) <= 0
-                ? 'Enter the amount collected.'
-                : null,
-          ),
-          const SizedBox(height: 16),
-          AppButton(
-            label: 'Report delivery & add income',
-            icon: Icons.task_alt,
-            onPressed: () {
-              if (!form.currentState!.validate()) return;
-              Navigator.pop(context, double.parse(amount.text));
-            },
-          ),
-        ],
-      ),
-    ),
-  );
 }
 
 class _Timeline extends StatelessWidget {

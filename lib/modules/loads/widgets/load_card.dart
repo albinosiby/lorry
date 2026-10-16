@@ -54,8 +54,10 @@ class LoadCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Top Meta Row: Vehicle Type, Date, Status
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     // Vehicle tag
                     Container(
@@ -102,14 +104,14 @@ class LoadCard extends StatelessWidget {
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF2E7D32).withValues(
-                                alpha: isDark ? 0.22 : 0.1,
-                              ),
+                              color: const Color(
+                                0xFF2E7D32,
+                              ).withValues(alpha: isDark ? 0.22 : 0.1),
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
-                                color: const Color(0xFF2E7D32).withValues(
-                                  alpha: isDark ? 0.5 : 0.25,
-                                ),
+                                color: const Color(
+                                  0xFF2E7D32,
+                                ).withValues(alpha: isDark ? 0.5 : 0.25),
                               ),
                             ),
                             child: Row(
@@ -307,7 +309,10 @@ class LoadCard extends StatelessWidget {
                             visualDensity: VisualDensity.compact,
                           ),
                           onPressed: onTap,
-                          icon: const Icon(Icons.arrow_forward_rounded, size: 14),
+                          icon: const Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 14,
+                          ),
                           label: const Text(
                             'View Load',
                             style: TextStyle(
@@ -367,8 +372,10 @@ class LoadCard extends StatelessWidget {
                               Icons.location_searching_outlined,
                               size: 14,
                             ),
-                            label: const Text(
-                              'Track',
+                            label: Text(
+                              load.deliveryReportedAt != null
+                                  ? 'Confirm receipt'
+                                  : 'Track',
                               style: TextStyle(fontSize: 11),
                             ),
                           ),
@@ -392,7 +399,8 @@ class LoadCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Container(
                     width: 9,
@@ -452,7 +460,8 @@ class LoadCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Container(
                     width: 9,
@@ -496,40 +505,39 @@ class LoadCard extends StatelessWidget {
     IconData icon,
     String value,
     bool isDark,
-  ) =>
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.06)
-              : const Color(0xFFF3F6F4),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.08)
-                : Colors.black.withValues(alpha: 0.05),
+  ) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    decoration: BoxDecoration(
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.06)
+          : const Color(0xFFF3F6F4),
+      borderRadius: BorderRadius.circular(6),
+      border: Border.all(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.08)
+            : Colors.black.withValues(alpha: 0.05),
+      ),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: 12,
+          color: isDark ? const Color(0xFFD5E9A9) : const Color(0xFF193F35),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white70 : Colors.black87,
           ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 12,
-              color: isDark ? const Color(0xFFD5E9A9) : const Color(0xFF193F35),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white70 : Colors.black87,
-              ),
-            ),
-          ],
-        ),
-      );
+      ],
+    ),
+  );
 }
 
 class RouteSummary extends StatelessWidget {
@@ -566,9 +574,9 @@ class RouteSummary extends StatelessWidget {
       Expanded(
         child: Text(
           placeLabel(title),
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
         ),
       ),
     ],

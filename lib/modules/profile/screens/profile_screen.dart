@@ -117,9 +117,9 @@ class _ProfileScreenState extends State<ProfileScreen>
             children: [
               Text(
                 'Upload $title',
-                style: Theme.of(sheetContext).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
+                style: Theme.of(
+                  sheetContext,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 16),
               ListTile(
@@ -274,6 +274,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       }
 
       // 2. Save profile
+      if (!mounted) return;
       final session = context.read<SessionCubit>();
       final ok = await context.read<ProfileCubit>().save(
         name.text.trim(),
@@ -699,8 +700,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                           color: accentBadgeColor.withValues(alpha: .5),
                         ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                      child: Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Icon(roleIcon, size: 13, color: badgeTextColor),
                           const SizedBox(width: 5),
@@ -914,6 +915,20 @@ class _ProfileScreenState extends State<ProfileScreen>
       icon: Icons.local_shipping_outlined,
       children: [
         _ActionTile(
+          icon: Icons.add_box_outlined,
+          iconColor: const Color(0xFF4CAF50),
+          title: 'Post a load',
+          subtitle: 'Publish freight for another driver to transport.',
+          onTap: () => context.push('/driver/post-load'),
+        ),
+        _ActionTile(
+          icon: Icons.inventory_2_outlined,
+          iconColor: const Color(0xFF2196F3),
+          title: 'My posted loads',
+          subtitle: 'Manage your listings, driver requests and deliveries.',
+          onTap: () => context.push('/driver/posted-loads'),
+        ),
+        _ActionTile(
           icon: Icons.add_location_alt_outlined,
           iconColor: const Color(0xFF2196F3),
           title: 'Post truck availability',
@@ -1063,16 +1078,16 @@ class _ProfileScreenState extends State<ProfileScreen>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: (isCustomer
-                    ? const Color(0xFF1E88E5)
-                    : const Color(0xFF2E7D32))
-                .withValues(alpha: isDark ? .2 : .1),
+            color:
+                (isCustomer ? const Color(0xFF1E88E5) : const Color(0xFF2E7D32))
+                    .withValues(alpha: isDark ? .2 : .1),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: (isCustomer
-                      ? const Color(0xFF1E88E5)
-                      : const Color(0xFF2E7D32))
-                  .withValues(alpha: .3),
+              color:
+                  (isCustomer
+                          ? const Color(0xFF1E88E5)
+                          : const Color(0xFF2E7D32))
+                      .withValues(alpha: .3),
             ),
           ),
           child: Row(
@@ -1177,7 +1192,8 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
         ),
         const SizedBox(height: 8),
-        Row(
+        Wrap(
+          runSpacing: 6,
           children: ['Male', 'Female', 'Other'].map((g) {
             final selected = gender == g;
             return Padding(
@@ -1460,12 +1476,13 @@ class _ProfileScreenState extends State<ProfileScreen>
         const SizedBox(height: 8),
         Text(
           'Gender',
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 6),
-        Row(
+        Wrap(
+          runSpacing: 6,
           children: ['Male', 'Female', 'Other'].map((g) {
             return Padding(
               padding: const EdgeInsets.only(right: 8),

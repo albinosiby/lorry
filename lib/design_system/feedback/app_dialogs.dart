@@ -28,20 +28,25 @@ Future<bool> confirmAction(
       ),
     ) ??
     false;
-Future<String?> cancellationReason(BuildContext context) async {
+Future<String?> cancellationReason(
+  BuildContext context, {
+  String title = 'Cancel booking?',
+  String fieldLabel = 'Reason',
+  String confirmLabel = 'Cancel booking',
+}) async {
   final controller = TextEditingController();
   final form = GlobalKey<FormState>();
   final result = await showDialog<String>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Cancel booking?'),
+      title: Text(title),
       content: Form(
         key: form,
         child: TextFormField(
           controller: controller,
           maxLength: 300,
-          decoration: const InputDecoration(
-            labelText: 'Reason',
+          decoration: InputDecoration(
+            labelText: fieldLabel,
             hintText: 'Tell the other party why',
           ),
           validator: (v) =>
@@ -51,7 +56,7 @@ Future<String?> cancellationReason(BuildContext context) async {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx),
-          child: const Text('Keep booking'),
+          child: const Text('Go back'),
         ),
         FilledButton(
           onPressed: () {
@@ -59,7 +64,7 @@ Future<String?> cancellationReason(BuildContext context) async {
               Navigator.pop(ctx, controller.text.trim());
             }
           },
-          child: const Text('Cancel booking'),
+          child: Text(confirmLabel),
         ),
       ],
     ),

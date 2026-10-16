@@ -27,8 +27,11 @@ class _TripsScreenState extends State<TripsScreen> {
     status = widget.requests ? 'requested' : null;
   }
 
-  Future<void> refresh() =>
-      context.read<TripsCubit>().load(loadId: widget.loadId, status: status);
+  Future<void> refresh() => context.read<TripsCubit>().load(
+    loadId: widget.loadId,
+    status: status,
+    incoming: widget.requests,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -58,8 +61,10 @@ class _TripsScreenState extends State<TripsScreen> {
                 const SizedBox(height: 20),
 
                 // Section Label
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     Text(
                       widget.requests
@@ -191,7 +196,10 @@ class _TripsScreenState extends State<TripsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -232,7 +240,6 @@ class _TripsScreenState extends State<TripsScreen> {
                           ],
                         ),
                       ),
-                      const Spacer(),
                       if (!widget.requests)
                         TextButton.icon(
                           style: TextButton.styleFrom(
@@ -298,8 +305,10 @@ class _TripsScreenState extends State<TripsScreen> {
                         color: Colors.white.withValues(alpha: 0.1),
                       ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    child: Wrap(
+                      alignment: WrapAlignment.spaceAround,
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
                         _buildMetricCol(
                           'IN TRANSIT',
@@ -564,8 +573,10 @@ class _TripsScreenState extends State<TripsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Top Meta Bar: Vehicle / Carrier + Status Pill
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     // Vehicle / Driver Name
                     Row(
@@ -877,7 +888,17 @@ class _TripsScreenState extends State<TripsScreen> {
       );
     }
 
-    final (color, label, icon) = switch (b.status) {
+    final (color, label, icon) = switch (b.displayStatus) {
+      'item_collected' => (
+        const Color(0xFF2E7D32),
+        'ITEMS COLLECTED',
+        Icons.inventory_2_outlined,
+      ),
+      'delivery_confirmed' => (
+        const Color(0xFF455A64),
+        'DELIVERY CONFIRMED',
+        Icons.task_alt_rounded,
+      ),
       'in_transit' => (
         const Color(0xFF00897B),
         'IN TRANSIT 🚚',

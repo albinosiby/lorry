@@ -4,10 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lorry_link/modules/loads/screens/load_form_screen.dart';
+import 'package:lorry_link/modules/bookings/models/booking_model.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lorry_link/app.dart';
 import 'package:lorry_link/di/injection.dart';
 import 'package:lorry_link/modules/home/screens/home_screen.dart';
+import 'package:lorry_link/modules/profile/screens/profile_screen.dart';
+import 'package:lorry_link/modules/auth/cubit/session_cubit.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lorry_link/modules/auth/screens/welcome_screen.dart';
 import 'package:lorry_link/modules/loads/models/load_model.dart';
 import 'package:lorry_link/modules/verification/cubit/profile_documents_cubit.dart';
@@ -15,6 +20,29 @@ import 'package:lorry_link/modules/verification/models/profile_document_model.da
 import 'package:lorry_link/modules/driver_documents/cubit/driver_documents_cubit.dart';
 import 'package:lorry_link/modules/driver_documents/models/driver_document_model.dart';
 import 'support/fakes.dart';
+
+class DriverPostedBooking extends FakeBookings {
+  @override
+  BookingModel get booking => BookingModel(
+    id: super.booking.id,
+    driverId: shipper.id,
+    driverName: 'Assigned carrier',
+    otherPhone: shipper.phone,
+    status: 'in_transit',
+    createdAt: DateTime(2026, 10, 15),
+    load: LoadModel(
+      id: sampleLoad.id,
+      shipperId: driver.id,
+      pickup: sampleLoad.pickup,
+      destination: sampleLoad.destination,
+      cargo: sampleLoad.cargo,
+      vehicle: sampleLoad.vehicle,
+      pickupDate: sampleLoad.pickupDate,
+      status: 'in_transit',
+      bookingId: super.booking.id,
+    ),
+  );
+}
 
 Future<void> start(
   WidgetTester tester,
@@ -228,7 +256,7 @@ void main() {
     await tester.tap(find.text('Sign in').last);
     await tester.pumpAndSettle();
     expect(auth.signInCalls, 1);
-    expect(find.text('Hello, Anita.'), findsOneWidget);
+    expect(find.textContaining(', Anita 👋'), findsOneWidget);
     expect(find.text('Continue with Google'), findsNothing);
     await finish(tester, auth);
   });
@@ -238,7 +266,13 @@ void main() {
     final router = GoRouter.of(tester.element(find.byType(HomeScreen)));
     router.go('/profile');
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextFormField).at(1), '');
+    await tester.ensureVisible(find.text('Edit profile details'));
+    await tester.tap(find.text('Edit profile details'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Mobile number'),
+      '',
+    );
     await tester.ensureVisible(find.text('Save changes'));
     await tester.tap(find.text('Save changes'));
     await tester.pumpAndSettle();
@@ -251,23 +285,23 @@ void main() {
       final auth = FakeAuth();
       final loads = FakeLoads();
       await start(tester, auth, loads: loads);
-      await tester.tap(find.text('Post Load'));
+      await tester.tap(find.text('Post Load').last);
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextFormField).first, 'Textile boxes');
-      await tester.ensureVisible(find.text('Publish load'));
-      await tester.tap(find.text('Publish load'));
+      await tester.ensureVisible(find.text('Publish load to market'));
+      await tester.tap(find.text('Publish load to market'));
       await tester.pumpAndSettle();
       expect(loads.saved, isNull);
       expect(find.text('Choose a pickup date.'), findsOneWidget);
       await tester.tap(find.text('Home').last);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Post Load'));
+      await tester.tap(find.text('Post Load').last);
       await tester.pumpAndSettle();
       expect(find.text('Textile boxes'), findsOneWidget);
       await finish(tester, auth);
     },
   );
-  testWidgets('driver filters loads and cannot open customer route', (
+  testWidgets('driver can post loads and still filter available freight', (
     tester,
   ) async {
     final auth = FakeAuth(current: driver);
@@ -275,27 +309,97 @@ void main() {
     final router = GoRouter.of(tester.element(find.byType(HomeScreen)));
     router.go('/loads/new');
     await tester.pumpAndSettle();
-    expect(find.text('Find your next load'), findsOneWidget);
-    await tester.tap(find.text('Filters'));
+    expect(find.byType(LoadFormScreen), findsOneWidget);
+    router.go('/loads/mine');
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Show matching loads'));
+    expect(find.text('Post another load'), findsOneWidget);
+    router.go('/loads/find');
+    await tester.pumpAndSettle();
+    expect(find.text('Available Freight Loads'), findsOneWidget);
+    await tester.tap(find.text('Filter Route'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Apply Route Filters'));
+    await tester.tap(find.text('Apply Route Filters'));
     await tester.pumpAndSettle();
     expect(find.text('Kochi'), findsOneWidget);
     await finish(tester, auth);
   });
+  testWidgets('driver Post Load is standalone and Back returns to Profile', (
+    tester,
+  ) async {
+    final auth = FakeAuth(current: driver);
+    await start(tester, auth);
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Post Load'));
+    await tester.pumpAndSettle();
+    expect(find.byType(LoadFormScreen), findsOneWidget);
+    expect(find.byType(NavigationBar).hitTestable(), findsNothing);
+    expect(find.byType(BackButton), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.byType(ProfileScreen), findsOneWidget);
+    expect(
+      tester
+          .element(find.byType(ProfileScreen))
+          .read<SessionCubit>()
+          .state
+          .profile
+          ?.role,
+      driver.role,
+    );
+    await tester.ensureVisible(find.text('Post a load'));
+    await tester.tap(find.text('Post a load'));
+    await tester.pumpAndSettle();
+    final field = find.byType(TextFormField).first;
+    await tester.enterText(field, 'Unsaved pickup');
+    await tester.pumpAndSettle();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.text('Discard changes?'), findsOneWidget);
+    await tester.tap(find.text('Discard').last);
+    await tester.pumpAndSettle();
+    expect(find.byType(ProfileScreen), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await finish(tester, auth);
+  });
+  testWidgets(
+    'driver posted-load Track opens carrier tracking and returns to listing',
+    (tester) async {
+      final auth = FakeAuth(current: driver);
+      final bookings = DriverPostedBooking();
+      final loads = FakeLoads()..rows = [bookings.booking.load];
+      await start(tester, auth, bookings: bookings, loads: loads);
+      await tester.tap(find.text('My Posted Loads').first);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Track'));
+      await tester.tap(find.text('Track'));
+      await tester.pumpAndSettle();
+      expect(find.text('Call driver'), findsOneWidget);
+      expect(find.text('View directions'), findsNothing);
+      await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+      await tester.pumpAndSettle();
+      expect(find.text('Post another load'), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(find.byType(ProfileScreen), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await finish(tester, auth);
+    },
+  );
   testWidgets(
     'driver home shows GPS status, accepted trip, and opens My Trips',
     (tester) async {
       final auth = FakeAuth(current: driver);
-      final bookings = FakeBookings()..status = 'accepted';
+      final bookings = FakeBookings()
+        ..status = 'accepted'
+        ..itemsCollected = true;
       await start(tester, auth, bookings: bookings);
-      expect(find.text('Current location'), findsOneWidget);
-      expect(find.text('Ready to start'), findsOneWidget);
+      expect(find.text('LIVE GPS ACTIVE'), findsOneWidget);
+      expect(find.text('READY TO DISPATCH'), findsOneWidget);
       expect(find.widgetWithText(FilledButton, 'Start trip'), findsOneWidget);
-      expect(find.text('View in map'), findsOneWidget);
-      await tester.tap(find.text('My Trips'));
+      await tester.ensureVisible(find.text('My Trips').first);
+      await tester.tap(find.text('My Trips').first);
       await tester.pumpAndSettle();
-      expect(find.text('My trips'), findsOneWidget);
+      expect(find.textContaining('Trips & Consignments'), findsOneWidget);
       await finish(tester, auth);
     },
   );
@@ -332,12 +436,25 @@ void main() {
     await tester.ensureVisible(find.text('Report delivery'));
     await tester.tap(find.text('Report delivery'));
     await tester.pumpAndSettle();
-    final collectionField = find.widgetWithText(TextFormField, 'Amount collected (₹)');
-    await tester.enterText(collectionField, '12500');
-    await tester.tap(find.text('Report delivery & add income'));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text('Confirm'),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(bookings.reported, isTrue);
-    expect(bookings.collectedAmount, 12500);
+    expect(bookings.collectedAmount, isNull);
+    await tester.ensureVisible(find.text('Record payment collected'));
+    await tester.tap(find.text('Record payment collected'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'New amount collected (₹)'),
+      '5000',
+    );
+    await tester.tap(find.text('Record collection & add income'));
+    await tester.pumpAndSettle();
+    expect(bookings.collectedAmount, 5000);
     expect(find.textContaining('Waiting for the customer'), findsOneWidget);
     await finish(tester, auth);
   });
@@ -345,11 +462,14 @@ void main() {
     tester,
   ) async {
     final auth = FakeAuth(current: driver);
-    final bookings = FakeBookings()..status = 'accepted';
+    final bookings = FakeBookings()
+      ..status = 'accepted'
+      ..itemsCollected = true;
     await start(tester, auth, bookings: bookings);
     final router = GoRouter.of(tester.element(find.byType(HomeScreen)));
     router.push('/bookings/${bookings.booking.id}');
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.widgetWithText(FilledButton, 'Start trip'));
     await tester.tap(find.widgetWithText(FilledButton, 'Start trip'));
     await tester.pumpAndSettle();
     expect(find.text('Start trip and share location?'), findsOneWidget);
@@ -362,7 +482,21 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(bookings.actions, contains('in_transit'));
-    expect(find.text('Live trip tracking'), findsOneWidget);
+    expect(find.text('WAITING FOR DRIVER LOCATION'), findsOneWidget);
+    await finish(tester, auth);
+  });
+  testWidgets('driver who posted freight tracks the carrier as load owner', (
+    tester,
+  ) async {
+    final auth = FakeAuth(current: driver);
+    final bookings = DriverPostedBooking();
+    await start(tester, auth, bookings: bookings);
+    final router = GoRouter.of(tester.element(find.byType(HomeScreen)));
+    router.push('/tracking/${bookings.booking.id}');
+    await tester.pumpAndSettle();
+    expect(find.text('Call driver'), findsOneWidget);
+    expect(find.text('View directions'), findsNothing);
+    expect(tester.takeException(), isNull);
     await finish(tester, auth);
   });
   testWidgets('customer tracking waits for GPS instead of buffering forever', (
@@ -373,8 +507,11 @@ void main() {
     final router = GoRouter.of(tester.element(find.byType(HomeScreen)));
     router.push('/tracking/20000000-0000-4000-8000-000000000001');
     await tester.pumpAndSettle();
-    expect(find.text('Waiting for the first location'), findsOneWidget);
-    expect(find.text('Refresh location'), findsOneWidget);
+    expect(
+      find.textContaining('Waiting for the first live GPS'),
+      findsOneWidget,
+    );
+    expect(find.byIcon(Icons.refresh_rounded), findsWidgets);
     await finish(tester, auth);
   });
   for (final width in [320.0, 599.0, 600.0, 1199.0, 1200.0, 1440.0]) {
@@ -474,7 +611,8 @@ void main() {
       final routes = {
         'home': '/home',
         'loads': current == shipper ? '/loads/mine' : '/loads/find',
-        if (current == shipper) 'post-load': '/loads/new',
+        'post-load': current == shipper ? '/loads/new' : '/driver/post-load',
+        if (current == driver) 'posted-loads': '/driver/posted-loads',
         'load-details': '/loads/${sampleLoad.id}',
         'bookings': current == shipper ? '/requests' : '/trips',
         'booking-details': '/bookings/20000000-0000-4000-8000-000000000001',

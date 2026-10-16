@@ -1,6 +1,8 @@
 # Android push notifications
 
-Firebase project: `lorry-link-e2906`. Android package: `com.lorrylink.app`.
+Firebase project: `lorry-link-e2906`. Android package: `com.newlorrylink.app`.
+The renamed Android app uses a newly registered Firebase Android client in the
+same project. Existing server service-account credentials remain unchanged.
 
 The Android client uses `android/app/google-services.json`. The Firebase service-account private key must never be copied into the app or committed to Git.
 

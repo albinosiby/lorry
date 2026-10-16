@@ -9,15 +9,56 @@ class BookingRepository implements IBookingRepository {
   @override
   Future<void> callContact(String phone) => ContactService().call(phone);
   @override
-  Future<String> request(String loadId) async =>
-      (await service.call('bookings.request', {'load_id': loadId}))['id'];
+  Future<String> request(String loadId, {String? vehicleId}) async =>
+      (await service.call('bookings.request', {
+        'load_id': loadId,
+        'vehicle_id': vehicleId,
+      }))['id'];
+  @override
+  Future<void> recordPayment(
+    String id,
+    double amount, {
+    required String requestId,
+    double? agreedFreight,
+  }) async {
+    await service.call('bookings.payment', {
+      'id': id,
+      'amount_collected': amount,
+      'payment_id': requestId,
+      'agreed_freight': agreedFreight,
+    });
+  }
+
+  @override
+  Future<void> assignTruck(String id, String vehicleId) async {
+    await service.call('bookings.assign_truck', {
+      'id': id,
+      'vehicle_id': vehicleId,
+    });
+  }
+
+  @override
+  Future<void> markStopUnloaded(String id, int index) async {
+    await service.call('bookings.stop_unloaded', {
+      'id': id,
+      'stop_index': index,
+    });
+  }
+
+  @override
+  Future<void> reportIssue(String id, String reason) async {
+    await service.call('bookings.delivery_issue', {'id': id, 'reason': reason});
+  }
+
   @override
   Future<List<BookingModel>> list({
+    bool incoming = false,
     String? loadId,
     String? status,
     int offset = 0,
   }) async =>
       (await service.call('bookings.list', {
+                'incoming': incoming,
                 'load_id': loadId,
                 'status': status,
                 'offset': offset,

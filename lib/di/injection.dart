@@ -1,6 +1,8 @@
 import 'package:get_it/get_it.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../utils/services/supabase_service.dart';
+import '../utils/services/workflow_sync_service.dart';
+import '../utils/services/payment_request_store.dart';
 import '../utils/services/location_service.dart';
 import '../utils/services/location_label_service.dart';
 import '../utils/services/place_search_service.dart';
@@ -56,6 +58,10 @@ import '../modules/tracking/cubit/trip_tracking_cubit.dart';
 final di = GetIt.instance;
 void configureDependencies(SupabaseClient client) {
   di.registerLazySingleton(() => SupabaseService(client));
+  di.registerLazySingleton(() => WorkflowSyncService(client));
+  di.registerLazySingleton<IPaymentRequestStore>(
+    () => const SecurePaymentRequestStore(),
+  );
   di.registerLazySingleton<ILocationService>(() => LocationService());
   di.registerLazySingleton<IPlaceSearchService>(() => PlaceSearchService());
   di.registerLazySingleton<NotificationSyncService>(
@@ -102,14 +108,22 @@ void configureCubits() {
   di.registerFactory(() => AuthFormCubit(di()));
   di.registerFactory(() => ProfileCubit(di(), di()));
   di.registerFactory(() => LoadsCubit(di()));
-  di.registerFactory(() => LoadDetailsCubit(di(), di()));
+  di.registerFactory(() => LoadDetailsCubit(di(), di(), vehicles: di()));
   di.registerFactory(() => LoadFormCubit(di(), di()));
   di.registerFactory(() => TripsCubit(di()));
   di.registerFactory(
     () => BookingDetailsCubit(
       di(),
       di(),
-      onTripStarted: () => di<TripLocationSharingService>().sync(),
+      onTripStarted: () async {
+        if (di.isRegistered<TripLocationSharingService>()) {
+          await di<TripLocationSharingService>().sync();
+        }
+      },
+      vehicles: di(),
+      paymentRequests: di.isRegistered<IPaymentRequestStore>()
+          ? di<IPaymentRequestStore>()
+          : null,
     ),
   );
   di.registerFactory(() => HomeCubit(di(), di(), di()));

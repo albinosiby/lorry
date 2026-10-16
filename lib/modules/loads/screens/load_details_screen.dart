@@ -9,6 +9,7 @@ import '../../profile/models/profile_model.dart';
 import '../cubit/load_details_cubit.dart';
 import '../models/load_model.dart';
 import '../models/load_screen_models.dart';
+import '../../bookings/widgets/truck_picker.dart';
 
 class LoadDetailsScreen extends StatelessWidget {
   const LoadDetailsScreen({super.key, required this.id});
@@ -282,7 +283,9 @@ class _PrimaryActions extends StatelessWidget {
     icon: load.status == 'in_transit'
         ? Icons.location_searching_outlined
         : Icons.manage_accounts_outlined,
-    title: load.status == 'in_transit'
+    title: load.deliveryReportedAt != null
+        ? 'Delivery reported'
+        : load.status == 'in_transit'
         ? 'Trip in progress'
         : 'Manage this load',
     message: load.deliveryReportedAt != null
@@ -310,7 +313,9 @@ class _PrimaryActions extends StatelessWidget {
             label: const Text('View assigned booking'),
           ),
         ],
-        if (load.status == 'in_transit' && load.bookingId != null) ...[
+        if (load.status == 'in_transit' &&
+            load.deliveryReportedAt == null &&
+            load.bookingId != null) ...[
           const SizedBox(height: 8),
           AppButton(
             label: 'Track booking',
@@ -389,11 +394,25 @@ class _PrimaryActions extends StatelessWidget {
                       return;
                     }
                     final cubit = context.read<LoadDetailsCubit>();
-                    if (await cubit.request(id) && context.mounted) {
-                      await context.push(
-                        '/bookings/${cubit.requestedBookingId}',
-                      );
-                      if (context.mounted) cubit.load(id);
+                    try {
+                      final trucks = await cubit.matchingTrucks(load);
+                      if (!context.mounted) return;
+                      final truck = await chooseBookingTruck(context, trucks);
+                      if (truck == null || !context.mounted) return;
+                      if (await cubit.request(id, vehicleId: truck.id) &&
+                          context.mounted) {
+                        await context.push(
+                          '/bookings/${cubit.requestedBookingId}',
+                        );
+                        if (context.mounted) cubit.load(id);
+                      }
+                    } catch (_) {
+                      if (context.mounted) {
+                        showNotice(
+                          context,
+                          'Could not load your trucks. Please try again.',
+                        );
+                      }
                     }
                   },
           ),

@@ -6,11 +6,17 @@ class TripsCubit extends ResourceCubit<TripsScreenModel> {
   TripsCubit(this.repository);
   final IBookingRepository repository;
   String? _loadId, _status;
-  Future<void> load({String? loadId, String? status}) {
+  bool _incoming = false;
+  Future<void> load({String? loadId, String? status, bool incoming = false}) {
+    _incoming = incoming;
     _loadId = loadId;
     _status = status;
     return fetch(() async {
-      final rows = await repository.list(loadId: loadId, status: status);
+      final rows = await repository.list(
+        loadId: loadId,
+        status: status,
+        incoming: incoming,
+      );
       return TripsScreenModel(rows, rows.length == 20);
     });
   }
@@ -20,6 +26,7 @@ class TripsCubit extends ResourceCubit<TripsScreenModel> {
     if (prev == null || !prev.hasMore || state.loading) return;
     await fetch(() async {
       final rows = await repository.list(
+        incoming: _incoming,
         loadId: _loadId,
         status: _status,
         offset: prev.bookings.length,

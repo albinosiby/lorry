@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 abstract final class AppConfig {
+  static const androidApplicationId = 'com.newlorrylink.app';
   static const googleEnabled = bool.fromEnvironment('GOOGLE_SIGN_IN_ENABLED');
   static const url = String.fromEnvironment('SUPABASE_URL');
   static const key = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY');
@@ -20,5 +21,7 @@ abstract final class AppConfig {
       !key.startsWith('YOUR_');
   static String get redirectUrl => kIsWeb
       ? '${Uri.base.origin}/auth/callback'
+      : defaultTargetPlatform == TargetPlatform.android
+      ? '$androidApplicationId://login-callback/'
       : 'com.lorrylink.app://login-callback/';
 }

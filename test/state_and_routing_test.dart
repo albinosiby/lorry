@@ -29,7 +29,7 @@ void main() {
           const SessionModel(SessionStatus.ready, profile: driver),
           Uri.parse('/loads/new'),
         ),
-        '/loads/find',
+        '/driver/post-load',
       );
       expect(
         sessionRedirect(
@@ -61,6 +61,19 @@ void main() {
       );
     },
   );
+  test('drivers can manage posted loads without switching account role', () {
+    const session = SessionModel(SessionStatus.ready, profile: driver);
+    for (final path in [
+      '/driver/post-load',
+      '/driver/posted-loads',
+      '/loads/${sampleLoad.id}/edit',
+      '/loads/${sampleLoad.id}/requests',
+      '/requests',
+      '/trips',
+    ]) {
+      expect(sessionRedirect(session, Uri.parse(path)), isNull, reason: path);
+    }
+  });
   test('setup, unresolved session and recovery have separate destinations', () {
     expect(
       sessionRedirect(

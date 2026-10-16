@@ -267,7 +267,7 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
                         children: [
                           TileLayer(
                             urlTemplate: AppConfig.mapTileUrl,
-                            userAgentPackageName: 'com.lorrylink.lorry_link',
+                            userAgentPackageName: AppConfig.androidApplicationId,
                           ),
                           MarkerLayer(
                             markers: [

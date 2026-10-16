@@ -48,69 +48,82 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
       ),
       body: PageBody(
         onRefresh: () => context.read<AvailabilityCubit>().load(),
-        child: BlocConsumer<AvailabilityCubit, ResourceState<AvailabilityScreenModel>>(
-          listener: (context, state) {
-            if (state.error != null) showNotice(context, state.error!);
-            if (state.notice != null) showNotice(context, state.notice!);
-          },
-          builder: (context, state) => ResourceView<AvailabilityScreenModel>(
-            state: state,
-            retry: () => context.read<AvailabilityCubit>().load(),
-            builder: (model) {
-              final allPosts = model.posts;
-              final livePosts = allPosts.where((p) => p.status.toLowerCase() == 'open').toList();
-              final closedPosts = allPosts.where((p) => p.status.toLowerCase() != 'open').toList();
+        child:
+            BlocConsumer<
+              AvailabilityCubit,
+              ResourceState<AvailabilityScreenModel>
+            >(
+              listener: (context, state) {
+                if (state.error != null) showNotice(context, state.error!);
+                if (state.notice != null) showNotice(context, state.notice!);
+              },
+              builder: (context, state) =>
+                  ResourceView<AvailabilityScreenModel>(
+                    state: state,
+                    retry: () => context.read<AvailabilityCubit>().load(),
+                    builder: (model) {
+                      final allPosts = model.posts;
+                      final livePosts = allPosts
+                          .where(
+                            (p) => p.status.toLowerCase() == 'open' && !p.busy,
+                          )
+                          .toList();
+                      final closedPosts = allPosts
+                          .where((p) => p.status.toLowerCase() != 'open')
+                          .toList();
 
-              List<TruckAvailabilityModel> filteredPosts;
-              if (_selectedFilterIndex == 1) {
-                filteredPosts = livePosts;
-              } else if (_selectedFilterIndex == 2) {
-                filteredPosts = closedPosts;
-              } else {
-                filteredPosts = allPosts;
-              }
+                      List<TruckAvailabilityModel> filteredPosts;
+                      if (_selectedFilterIndex == 1) {
+                        filteredPosts = livePosts;
+                      } else if (_selectedFilterIndex == 2) {
+                        filteredPosts = closedPosts;
+                      } else {
+                        filteredPosts = allPosts;
+                      }
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // 1. Radar Command Hero Card
-                  _buildRadarHero(
-                    context,
-                    totalBroadcasts: livePosts.length,
-                    totalVehicles: model.vehicles.length,
-                    isDark: isDark,
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // 1. Radar Command Hero Card
+                          _buildRadarHero(
+                            context,
+                            totalBroadcasts: livePosts.length,
+                            totalVehicles: model.vehicles.length,
+                            isDark: isDark,
+                          ),
+                          const SizedBox(height: 18),
+
+                          // 2. Filter Segments
+                          if (model.vehicles.isNotEmpty &&
+                              model.posts.isNotEmpty) ...[
+                            _buildFilterTabs(
+                              totalAll: allPosts.length,
+                              totalLive: livePosts.length,
+                              totalClosed: closedPosts.length,
+                              isDark: isDark,
+                            ),
+                            const SizedBox(height: 14),
+                          ],
+
+                          // 3. Main Content
+                          if (model.vehicles.isEmpty)
+                            _buildNoVehiclesCard(context, isDark)
+                          else if (model.posts.isEmpty)
+                            _buildEmptyState(context, isDark)
+                          else if (filteredPosts.isEmpty)
+                            _buildFilteredEmptyState(isDark)
+                          else
+                            ...filteredPosts.map(
+                              (post) =>
+                                  _buildAvailabilityCard(context, post, isDark),
+                            ),
+
+                          const SizedBox(height: 88),
+                        ],
+                      );
+                    },
                   ),
-                  const SizedBox(height: 18),
-
-                  // 2. Filter Segments
-                  if (model.vehicles.isNotEmpty && model.posts.isNotEmpty) ...[
-                    _buildFilterTabs(
-                      totalAll: allPosts.length,
-                      totalLive: livePosts.length,
-                      totalClosed: closedPosts.length,
-                      isDark: isDark,
-                    ),
-                    const SizedBox(height: 14),
-                  ],
-
-                  // 3. Main Content
-                  if (model.vehicles.isEmpty)
-                    _buildNoVehiclesCard(context, isDark)
-                  else if (model.posts.isEmpty)
-                    _buildEmptyState(context, isDark)
-                  else if (filteredPosts.isEmpty)
-                    _buildFilteredEmptyState(isDark)
-                  else
-                    ...filteredPosts.map(
-                      (post) => _buildAvailabilityCard(context, post, isDark),
-                    ),
-
-                  const SizedBox(height: 88),
-                ],
-              );
-            },
-          ),
-        ),
+            ),
       ),
     );
   }
@@ -128,11 +141,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF0F2018),
-            Color(0xFF193F35),
-            Color(0xFF143028),
-          ],
+          colors: [Color(0xFF0F2018), Color(0xFF193F35), Color(0xFF143028)],
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
@@ -197,7 +206,10 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
               ),
               // Glowing Live Pulse
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF6BDB9C).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(20),
@@ -250,9 +262,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.07),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.1),
-              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
             ),
             child: Row(
               children: [
@@ -366,20 +376,29 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                   Text(
                     title,
                     style: TextStyle(
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
                       color: isSelected
                           ? Colors.white
-                          : (isDark ? Colors.white.withValues(alpha: 0.75) : const Color(0xFF193F35)),
+                          : (isDark
+                                ? Colors.white.withValues(alpha: 0.75)
+                                : const Color(0xFF193F35)),
                       fontSize: 12,
                     ),
                   ),
                   const SizedBox(width: 6),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 1,
+                    ),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? Colors.white.withValues(alpha: 0.25)
-                          : (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.08)),
+                          : (isDark
+                                ? Colors.white.withValues(alpha: 0.1)
+                                : Colors.black.withValues(alpha: 0.08)),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
@@ -389,7 +408,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                         fontWeight: FontWeight.w700,
                         color: isSelected
                             ? Colors.white
-                            : (isDark ? Colors.white.withValues(alpha: 0.7) : Colors.black87),
+                            : (isDark
+                                  ? Colors.white.withValues(alpha: 0.7)
+                                  : Colors.black87),
                       ),
                     ),
                   ),
@@ -402,7 +423,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
               side: BorderSide(
                 color: isSelected
                     ? const Color(0xFF6BDB9C).withValues(alpha: 0.5)
-                    : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06)),
+                    : (isDark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : Colors.black.withValues(alpha: 0.06)),
               ),
               onSelected: (_) => setState(() => _selectedFilterIndex = index),
             ),
@@ -419,7 +442,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
     TruckAvailabilityModel post,
     bool isDark,
   ) {
-    final isOpen = post.status.toLowerCase() == 'open';
+    final isOpen = post.status.toLowerCase() == 'open' && !post.busy;
     final vehicle = post.vehicle;
     final registration = vehicle?.registrationNumber ?? 'COMMERCIAL TRUCK';
 
@@ -430,8 +453,12 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: isOpen
-              ? (isDark ? const Color(0xFF6BDB9C).withValues(alpha: 0.28) : const Color(0xFF193F35).withValues(alpha: 0.15))
-              : (isDark ? Colors.white.withValues(alpha: 0.07) : Colors.black.withValues(alpha: 0.06)),
+              ? (isDark
+                    ? const Color(0xFF6BDB9C).withValues(alpha: 0.28)
+                    : const Color(0xFF193F35).withValues(alpha: 0.15))
+              : (isDark
+                    ? Colors.white.withValues(alpha: 0.07)
+                    : Colors.black.withValues(alpha: 0.06)),
           width: isOpen ? 1.4 : 1,
         ),
         boxShadow: [
@@ -453,7 +480,10 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
               const Spacer(),
               if (isOpen)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF6BDB9C).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(20),
@@ -487,15 +517,22 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                 )
               else
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : Colors.black.withValues(alpha: 0.06),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     'CLOSED / EXPIRED',
                     style: TextStyle(
-                      color: isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black54,
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.5)
+                          : Colors.black54,
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.4,
@@ -505,6 +542,14 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
             ],
           ),
           const SizedBox(height: 12),
+
+          if (post.busy)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: Text(
+                'On assigned trip—not visible to customers. Post availability with your new location after delivery.',
+              ),
+            ),
 
           // 2. Vehicle Specs Badges (if vehicle data present)
           if (vehicle != null) ...[
@@ -519,7 +564,8 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                 ),
                 _buildSpecPill(
                   icon: Icons.scale_outlined,
-                  text: '${vehicle.capacityTonnes.toStringAsFixed(1)} T Payload',
+                  text:
+                      '${vehicle.capacityTonnes.toStringAsFixed(1)} T Payload',
                   isDark: isDark,
                 ),
                 _buildSpecPill(
@@ -536,10 +582,14 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isDark ? Colors.white.withValues(alpha: 0.04) : const Color(0xFFF7F8F2),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.04)
+                  : const Color(0xFFF7F8F2),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04),
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : Colors.black.withValues(alpha: 0.04),
               ),
             ),
             child: Row(
@@ -556,7 +606,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                     Container(
                       width: 2,
                       height: 24,
-                      color: isDark ? Colors.white.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.15),
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.2)
+                          : Colors.black.withValues(alpha: 0.15),
                       margin: const EdgeInsets.symmetric(vertical: 2),
                     ),
                     const Icon(
@@ -579,7 +631,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                         style: TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
-                          color: isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black45,
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.5)
+                              : Colors.black45,
                           letterSpacing: 0.5,
                         ),
                       ),
@@ -588,7 +642,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: isDark ? Colors.white : const Color(0xFF193F35),
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFF193F35),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -599,7 +655,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                         style: TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
-                          color: isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black45,
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.5)
+                              : Colors.black45,
                           letterSpacing: 0.5,
                         ),
                       ),
@@ -612,7 +670,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                           fontWeight: FontWeight.w700,
                           color: post.preferredDestination?.isNotEmpty == true
                               ? AppTheme.orange
-                              : (isDark ? Colors.white.withValues(alpha: 0.7) : Colors.black54),
+                              : (isDark
+                                    ? Colors.white.withValues(alpha: 0.7)
+                                    : Colors.black54),
                         ),
                       ),
                     ],
@@ -648,7 +708,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                       post.note,
                       style: TextStyle(
                         fontSize: 12,
-                        color: isDark ? Colors.white.withValues(alpha: 0.85) : const Color(0xFF333333),
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.85)
+                            : const Color(0xFF333333),
                         height: 1.35,
                       ),
                     ),
@@ -665,14 +727,18 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
               Icon(
                 Icons.schedule_rounded,
                 size: 14,
-                color: isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black45,
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.5)
+                    : Colors.black45,
               ),
               const SizedBox(width: 5),
               Text(
                 'Available from ${_formatDate(post.availableFrom)}',
                 style: TextStyle(
                   fontSize: 11,
-                  color: isDark ? Colors.white.withValues(alpha: 0.6) : Colors.black54,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.6)
+                      : Colors.black54,
                 ),
               ),
               const Spacer(),
@@ -683,7 +749,10 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                     side: BorderSide(
                       color: const Color(0xFFEF5350).withValues(alpha: 0.4),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     visualDensity: VisualDensity.compact,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -772,10 +841,14 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFF0F4F1),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : const Color(0xFFF0F4F1),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.04),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.black.withValues(alpha: 0.04),
         ),
       ),
       child: Row(
@@ -792,7 +865,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white.withValues(alpha: 0.8) : const Color(0xFF222222),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.8)
+                  : const Color(0xFF222222),
             ),
           ),
         ],
@@ -809,7 +884,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
         color: isDark ? const Color(0xFF15251F) : Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.black.withValues(alpha: 0.06),
         ),
       ),
       child: Column(
@@ -844,7 +921,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
-              color: isDark ? Colors.white.withValues(alpha: 0.65) : Colors.black54,
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.65)
+                  : Colors.black54,
               height: 1.4,
             ),
           ),
@@ -866,7 +945,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
         color: isDark ? const Color(0xFF15251F) : Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.black.withValues(alpha: 0.06),
         ),
       ),
       child: Column(
@@ -903,7 +984,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
-              color: isDark ? Colors.white.withValues(alpha: 0.65) : Colors.black54,
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.65)
+                  : Colors.black54,
               height: 1.45,
             ),
           ),
@@ -937,7 +1020,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
           Icon(
             Icons.filter_alt_off_rounded,
             size: 40,
-            color: isDark ? Colors.white.withValues(alpha: 0.3) : Colors.black26,
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.3)
+                : Colors.black26,
           ),
           const SizedBox(height: 12),
           Text(
@@ -945,7 +1030,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white.withValues(alpha: 0.6) : Colors.black54,
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.6)
+                  : Colors.black54,
             ),
           ),
         ],
@@ -989,11 +1076,23 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
   String _formatDate(DateTime dt) {
     final local = dt.toLocal();
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     final m = months[local.month - 1];
-    final h = local.hour > 12 ? local.hour - 12 : (local.hour == 0 ? 12 : local.hour);
+    final h = local.hour > 12
+        ? local.hour - 12
+        : (local.hour == 0 ? 12 : local.hour);
     final ampm = local.hour >= 12 ? 'PM' : 'AM';
     final minute = local.minute.toString().padLeft(2, '0');
     return '${local.day} $m, $h:$minute $ampm';
@@ -1123,14 +1222,18 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
-                            color: isDark ? Colors.white : const Color(0xFF193F35),
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF193F35),
                           ),
                         ),
                         Text(
                           'Make vehicle discoverable to spot shippers',
                           style: TextStyle(
                             fontSize: 12,
-                            color: isDark ? Colors.white.withValues(alpha: 0.6) : Colors.black54,
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.6)
+                                : Colors.black54,
                           ),
                         ),
                       ],
@@ -1150,7 +1253,9 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
-                  color: isDark ? Colors.white.withValues(alpha: 0.6) : const Color(0xFF193F35),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.6)
+                      : const Color(0xFF193F35),
                   letterSpacing: 0.5,
                 ),
               ),
@@ -1170,13 +1275,19 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? (isDark ? const Color(0xFF193F35) : const Color(0xFFEAF5EE))
-                                : (isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF7F8F2)),
+                                ? (isDark
+                                      ? const Color(0xFF193F35)
+                                      : const Color(0xFFEAF5EE))
+                                : (isDark
+                                      ? Colors.white.withValues(alpha: 0.05)
+                                      : const Color(0xFFF7F8F2)),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
                               color: isSelected
                                   ? const Color(0xFF6BDB9C)
-                                  : (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.08)),
+                                  : (isDark
+                                        ? Colors.white.withValues(alpha: 0.1)
+                                        : Colors.black.withValues(alpha: 0.08)),
                               width: isSelected ? 1.8 : 1,
                             ),
                           ),
@@ -1201,7 +1312,9 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  color: isDark ? Colors.white.withValues(alpha: 0.9) : Colors.black87,
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.9)
+                                      : Colors.black87,
                                 ),
                               ),
                             ],
@@ -1220,7 +1333,9 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
-                  color: isDark ? Colors.white.withValues(alpha: 0.6) : const Color(0xFF193F35),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.6)
+                      : const Color(0xFF193F35),
                   letterSpacing: 0.5,
                 ),
               ),
@@ -1240,20 +1355,28 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
                 decoration: BoxDecoration(
                   color: latitude != null
                       ? const Color(0xFF4CAF50).withValues(alpha: 0.1)
-                      : (isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF0F4F1)),
+                      : (isDark
+                            ? Colors.white.withValues(alpha: 0.05)
+                            : const Color(0xFFF0F4F1)),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: latitude != null
                         ? const Color(0xFF4CAF50).withValues(alpha: 0.4)
-                        : (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black12),
+                        : (isDark
+                              ? Colors.white.withValues(alpha: 0.1)
+                              : Colors.black12),
                   ),
                 ),
                 child: Row(
                   children: [
                     Icon(
-                      latitude != null ? Icons.gps_fixed_rounded : Icons.my_location_rounded,
+                      latitude != null
+                          ? Icons.gps_fixed_rounded
+                          : Icons.my_location_rounded,
                       size: 18,
-                      color: latitude != null ? const Color(0xFF4CAF50) : AppTheme.orange,
+                      color: latitude != null
+                          ? const Color(0xFF4CAF50)
+                          : AppTheme.orange,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -1277,7 +1400,9 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
                               '${latitude!.toStringAsFixed(4)}° N, ${longitude!.toStringAsFixed(4)}° E',
                               style: TextStyle(
                                 fontSize: 10,
-                                color: isDark ? Colors.white.withValues(alpha: 0.6) : Colors.black54,
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.6)
+                                    : Colors.black54,
                               ),
                             ),
                         ],
@@ -1285,7 +1410,10 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
                     ),
                     TextButton.icon(
                       style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         visualDensity: VisualDensity.compact,
                       ),
                       onPressed: isDetectingGps ? null : _detectGps,
@@ -1298,7 +1426,10 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
                           : const Icon(Icons.sync_rounded, size: 14),
                       label: Text(
                         latitude == null ? 'Acquire GPS' : 'Update',
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ],
@@ -1335,7 +1466,9 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
-                  color: isDark ? Colors.white.withValues(alpha: 0.6) : const Color(0xFF193F35),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.6)
+                      : const Color(0xFF193F35),
                   letterSpacing: 0.5,
                 ),
               ),
@@ -1356,7 +1489,10 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
                     return Padding(
                       padding: const EdgeInsets.only(right: 6),
                       child: ActionChip(
-                        label: Text(corridor, style: const TextStyle(fontSize: 11)),
+                        label: Text(
+                          corridor,
+                          style: const TextStyle(fontSize: 11),
+                        ),
                         visualDensity: VisualDensity.compact,
                         padding: EdgeInsets.zero,
                         onPressed: () {
@@ -1377,7 +1513,9 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
-                  color: isDark ? Colors.white.withValues(alpha: 0.6) : const Color(0xFF193F35),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.6)
+                      : const Color(0xFF193F35),
                   letterSpacing: 0.5,
                 ),
               ),
@@ -1385,7 +1523,8 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
               AppTextField(
                 controller: note,
                 label: 'Notes for shippers (optional)',
-                hint: 'e.g. Return load preferred, ready for pickup immediately',
+                hint:
+                    'e.g. Return load preferred, ready for pickup immediately',
                 lines: 3,
                 maxLength: 500,
               ),
@@ -1398,7 +1537,10 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
                     return Padding(
                       padding: const EdgeInsets.only(right: 6),
                       child: ActionChip(
-                        label: Text('+ $p', style: const TextStyle(fontSize: 11)),
+                        label: Text(
+                          '+ $p',
+                          style: const TextStyle(fontSize: 11),
+                        ),
                         visualDensity: VisualDensity.compact,
                         padding: EdgeInsets.zero,
                         onPressed: () {
@@ -1418,7 +1560,10 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
               const SizedBox(height: 22),
 
               // ─── Submit Action ─────────────────────────────────────────────
-              BlocBuilder<AvailabilityCubit, ResourceState<AvailabilityScreenModel>>(
+              BlocBuilder<
+                AvailabilityCubit,
+                ResourceState<AvailabilityScreenModel>
+              >(
                 builder: (context, state) => AppButton(
                   label: 'Start Live Broadcast',
                   icon: Icons.radar_rounded,
@@ -1491,7 +1636,8 @@ class _AvailabilityFormState extends State<_AvailabilityForm> {
         latitude = loc.latitude;
         longitude = loc.longitude;
         if (currentLocation.text.trim().isEmpty) {
-          currentLocation.text = 'Live GPS Position (${latitude!.toStringAsFixed(3)}, ${longitude!.toStringAsFixed(3)})';
+          currentLocation.text =
+              'Live GPS Position (${latitude!.toStringAsFixed(3)}, ${longitude!.toStringAsFixed(3)})';
         }
       });
     } finally {

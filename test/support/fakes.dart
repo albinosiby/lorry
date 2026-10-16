@@ -170,6 +170,8 @@ class FakeBookings implements IBookingRepository {
   String status = 'requested';
   bool reported = false;
   bool itemsCollected = false;
+  String? vehicleId = '40000000-0000-4000-8000-000000000001';
+  double totalCollected = 0;
   final actions = <String>[];
   BookingModel get booking => BookingModel(
     id: '20000000-0000-4000-8000-000000000001',
@@ -181,12 +183,36 @@ class FakeBookings implements IBookingRepository {
     otherName: shipper.name,
     deliveryReportedAt: reported ? DateTime(2026, 10, 13) : null,
     itemCollectedAt: itemsCollected ? DateTime(2026, 10, 15) : null,
+    vehicleId: vehicleId,
+    amountCollected: totalCollected,
     events: [BookingEvent('requested', DateTime(2026, 10, 12), '')],
   );
   @override
-  Future<String> request(String loadId) async => booking.id;
+  Future<String> request(String loadId, {String? vehicleId}) async =>
+      booking.id;
+  @override
+  Future<void> recordPayment(
+    String id,
+    double amount, {
+    required String requestId,
+    double? agreedFreight,
+  }) async {
+    collectedAmount = amount;
+    totalCollected += amount;
+  }
+
+  @override
+  Future<void> assignTruck(String id, String vehicleId) async {
+    this.vehicleId = vehicleId;
+  }
+
+  @override
+  Future<void> markStopUnloaded(String id, int index) async {}
+  @override
+  Future<void> reportIssue(String id, String reason) async {}
   @override
   Future<List<BookingModel>> list({
+    bool incoming = false,
     String? loadId,
     String? status,
     int offset = 0,
@@ -395,6 +421,7 @@ Future<void> setupFakes(
   di.registerSingleton<IHomeRepository>(FakeHome());
   di.registerSingleton<INotificationRepository>(FakeNotifications());
   di.registerSingleton<ILocationService>(FakeLocationService());
+  di.registerSingleton<IVehicleRepository>(FakeVehicles());
   di.registerSingleton<IPlaceSearchService>(FakePlaceSearchService());
   di.registerSingleton<IProfileDocumentsRepository>(FakeProfileDocuments());
   di.registerSingleton<ITripTrackingRepository>(FakeTripTracking());

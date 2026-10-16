@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../utils/services/workflow_sync_service.dart';
 
 class PageBody extends StatefulWidget {
   const PageBody({
@@ -17,6 +18,33 @@ class PageBody extends StatefulWidget {
 
 class _PageBodyState extends State<PageBody> with WidgetsBindingObserver {
   Timer? timer;
+  Timer? changeDebounce;
+  StreamSubscription<void>? changes;
+  bool refreshing = false;
+  bool refreshAgain = false;
+  Future<void> refresh() async {
+    if (!mounted ||
+        !active ||
+        !TickerMode.valuesOf(context).enabled ||
+        !(ModalRoute.of(context)?.isCurrent ?? true)) {
+      return;
+    }
+    if (refreshing) {
+      refreshAgain = true;
+      return;
+    }
+    refreshing = true;
+    try {
+      await widget.onRefresh?.call();
+    } finally {
+      refreshing = false;
+      if (refreshAgain) {
+        refreshAgain = false;
+        if (mounted) unawaited(refresh());
+      }
+    }
+  }
+
   bool active = true;
   bool? wasVisible;
   @override
@@ -35,6 +63,13 @@ class _PageBodyState extends State<PageBody> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    changes = WorkflowEvents.changes.listen((_) {
+      changeDebounce?.cancel();
+      changeDebounce = Timer(
+        const Duration(milliseconds: 500),
+        () => unawaited(refresh()),
+      );
+    });
     timer = Timer.periodic(const Duration(seconds: 45), (_) {
       if (mounted &&
           active &&
@@ -58,6 +93,8 @@ class _PageBodyState extends State<PageBody> with WidgetsBindingObserver {
   @override
   void dispose() {
     timer?.cancel();
+    changes?.cancel();
+    changeDebounce?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }

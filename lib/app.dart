@@ -10,6 +10,7 @@ import 'modules/auth/cubit/session_cubit.dart';
 import 'modules/auth/models/auth_models.dart';
 import 'utils/services/notification_sync_service.dart';
 import 'utils/services/trip_location_sharing_service.dart';
+import 'utils/services/workflow_sync_service.dart';
 
 class LorryLinkApp extends StatefulWidget {
   const LorryLinkApp({super.key});
@@ -50,6 +51,13 @@ class _LorryLinkAppState extends State<LorryLinkApp>
       );
       notificationSubscription = session.stream.listen((state) {
         final profile = state.profile;
+        if (di.isRegistered<WorkflowSyncService>()) {
+          if (state.status == SessionStatus.ready && profile != null) {
+            unawaited(di<WorkflowSyncService>().start(profile.id));
+          } else {
+            unawaited(di<WorkflowSyncService>().stop());
+          }
+        }
         if (di.isRegistered<TripLocationSharingService>()) {
           if (state.status == SessionStatus.ready && profile != null) {
             di<TripLocationSharingService>().start(profile.id);
@@ -78,6 +86,9 @@ class _LorryLinkAppState extends State<LorryLinkApp>
     refresh.dispose();
     notificationSubscription?.cancel();
     notificationOpens?.cancel();
+    if (di.isRegistered<WorkflowSyncService>()) {
+      unawaited(di<WorkflowSyncService>().stop());
+    }
     if (di.isRegistered<TripLocationSharingService>()) {
       unawaited(di<TripLocationSharingService>().stop());
     }
@@ -90,6 +101,7 @@ class _LorryLinkAppState extends State<LorryLinkApp>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) WorkflowEvents.changed();
     final profile = session.state.profile;
     if (state == AppLifecycleState.resumed &&
         profile != null &&

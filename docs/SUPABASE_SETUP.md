@@ -21,8 +21,13 @@ The user confirmed these redirect URLs were saved in Authentication -> URL Confi
 
 ```text
 com.lorrylink.app://login-callback/
+com.newlorrylink.app://login-callback/
 http://localhost:8080/auth/callback
 ```
+
+The user confirmed adding the new callback when replacing the Firebase client
+configuration. Keep the old callback allowed while older installations remain
+in use. Hosted settings have not been independently read back in this session.
 
 Native Android/iOS deep links are configured in their manifests. The app uses PKCE and handles the passwordRecovery auth event by routing to the password-update screen. Use the same browser/device for a PKCE confirmation or reset flow as the one that initiated it.
 

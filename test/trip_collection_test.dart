@@ -12,16 +12,13 @@ void main() {
       final cubit = BookingDetailsCubit(repository, FakeLocationService());
       await cubit.load(repository.booking.id);
       expect(cubit.state.data!.booking.isLiveTrip, isTrue);
-      expect(
-        await cubit.reportDeliveryWithCollection(repository.booking.id, 12000),
-        isTrue,
-      );
+      expect(await cubit.reportDelivery(repository.booking.id), isTrue);
       final booking = cubit.state.data!.booking;
       expect(booking.deliveryPendingConfirmation, isTrue);
       expect(booking.canReport, isFalse);
       expect(booking.canComplete, isTrue);
       expect(booking.isLiveTrip, isFalse);
-      expect(repository.collectedAmount, 12000);
+      expect(repository.collectedAmount, isNull);
       await cubit.close();
     },
   );

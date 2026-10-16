@@ -75,12 +75,18 @@ class AdaptiveScaffold extends StatelessWidget {
       ],
     );
     final isHome = shell.currentIndex == 0;
+    final path = GoRouterState.of(context).uri.path;
+    final title = path == '/loads/new'
+        ? 'Post Load'
+        : path == '/loads/mine'
+        ? 'My Posted Loads'
+        : labels[shell.currentIndex];
 
     return Scaffold(
       appBar: isHome
           ? null
           : AppBar(
-              title: Text(labels[shell.currentIndex]),
+              title: Text(title),
               actions: [
                 IconButton(
                   tooltip: 'Notifications',

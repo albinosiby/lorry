@@ -24,6 +24,7 @@ class TripLocationSharingService {
   StreamSubscription<ServiceStatus>? _gps;
   String? _user;
   bool _busy = false;
+  Position? _latestPosition;
   int _generation = 0;
   final _lastSent = <String, DateTime>{};
   final _enabled = <String, bool>{};
@@ -62,6 +63,7 @@ class TripLocationSharingService {
       if (active.isEmpty) {
         await _positions?.cancel();
         _positions = null;
+        _latestPosition = null;
         return;
       }
       final enabled =
@@ -98,7 +100,10 @@ class TripLocationSharingService {
                 ),
               ),
             ).listen(
-              (_) {},
+              (position) {
+                _latestPosition = position;
+                unawaited(sync());
+              },
               onError: (Object _) {
                 _positions?.cancel();
                 _positions = null;
@@ -114,9 +119,19 @@ class TripLocationSharingService {
           )
           .toList();
       if (due.isEmpty) return;
-      final point = await location
-          .current(requestPermission: false)
-          .timeout(const Duration(seconds: 25));
+      final latest = _latestPosition;
+      final point =
+          latest != null &&
+              DateTime.now().difference(latest.timestamp).abs() <
+                  const Duration(minutes: 3)
+          ? DeviceLocation(
+              status: DeviceLocationStatus.ready,
+              latitude: latest.latitude,
+              longitude: latest.longitude,
+            )
+          : await location
+                .current(requestPermission: false)
+                .timeout(const Duration(seconds: 25));
       if (generation != _generation) return;
       if (!point.available) return;
       for (final trip in due) {
@@ -146,5 +161,6 @@ class TripLocationSharingService {
     _gps = null;
     _lastSent.clear();
     _enabled.clear();
+    _latestPosition = null;
   }
 }

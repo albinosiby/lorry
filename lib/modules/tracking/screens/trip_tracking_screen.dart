@@ -9,12 +9,12 @@ import 'package:lorry_link/config/app_config.dart';
 import 'package:lorry_link/core/state/resource_cubit.dart';
 import 'package:lorry_link/design_system/design_system.dart';
 import '../../../di/injection.dart';
-import '../../../utils/services/map_navigation_service.dart';
+import '../../bookings/widgets/trip_directions.dart';
 import '../../auth/cubit/session_cubit.dart';
 import '../../bookings/models/booking_model.dart';
 import '../../bookings/repositories/booking_repository_interface.dart';
-import '../../profile/models/profile_model.dart';
 import '../../loads/widgets/load_card.dart';
+import '../../loads/models/load_model.dart';
 import '../cubit/trip_tracking_cubit.dart';
 import '../models/trip_location_model.dart';
 
@@ -31,6 +31,9 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
   BookingModel? booking;
   bool loadingBooking = false;
   final mapController = MapController();
+  bool get trackingFinished =>
+      booking?.deliveryReportedAt != null ||
+      ['completed', 'cancelled', 'declined'].contains(booking?.status);
 
   @override
   void initState() {
@@ -71,7 +74,8 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isDriver =
-        context.read<SessionCubit>().state.profile?.role == UserRole.driver;
+        booking != null &&
+        booking!.driverId == context.read<SessionCubit>().state.profile?.id;
 
     return Scaffold(
       body: BlocConsumer<TripTrackingCubit, ResourceState<TripLocationModel?>>(
@@ -106,7 +110,8 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
                         children: [
                           TileLayer(
                             urlTemplate: AppConfig.mapTileUrl,
-                            userAgentPackageName: 'com.lorrylink.lorry_link',
+                            userAgentPackageName:
+                                AppConfig.androidApplicationId,
                           ),
                           // Truck Live Position Marker
                           if (location != null)
@@ -244,7 +249,11 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                location != null
+                                trackingFinished
+                                    ? 'TRIP FINISHED · LAST SHARED LOCATION'
+                                    : booking?.status == 'accepted'
+                                    ? 'TRIP NOT STARTED · PICKUP LOCATION'
+                                    : location != null
                                     ? (!location.locationEnabled
                                           ? 'LOCATION OFF · LAST KNOWN POINT'
                                           : location.stale
@@ -374,7 +383,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
                   ],
                 ),
               ),
-              StatusBadge(booking?.status ?? 'accepted'),
+              StatusBadge(statusLabel(booking?.displayStatus ?? 'accepted')),
             ],
           ),
 
@@ -419,7 +428,11 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              !location.locationEnabled
+              trackingFinished
+                  ? 'Location sharing ended. This is the last shared trip point.'
+                  : booking?.status == 'accepted'
+                  ? 'Collection location recorded. Live updates begin when the trip starts.'
+                  : !location.locationEnabled
                   ? 'Location is off. The map shows the last shared point.'
                   : location.stale
                   ? 'No recent update. Showing the last shared point; the driver may be offline.'
@@ -437,7 +450,11 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    'Waiting for the first live GPS broadcast from driver...',
+                    trackingFinished
+                        ? 'No location was recorded for this completed trip.'
+                        : booking?.status == 'accepted'
+                        ? 'Trip has not started. Pickup and destination are shown on the map.'
+                        : 'Waiting for the first live GPS broadcast from driver...',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -450,7 +467,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
           ],
 
           // Driver Actions / Direction Button
-          if (isDriver && booking != null) ...[
+          if (isDriver && booking != null && !trackingFinished) ...[
             const SizedBox(height: 14),
             FilledButton.icon(
               style: FilledButton.styleFrom(
@@ -466,21 +483,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen> {
                 'View directions',
                 style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
               ),
-              onPressed: () {
-                if (booking.itemsCollected) {
-                  MapNavigationService().openDestination(
-                    destinationLabel: booking.load.destination,
-                    latitude: booking.load.destinationLatitude,
-                    longitude: booking.load.destinationLongitude,
-                  );
-                } else {
-                  MapNavigationService().openPickup(
-                    pickupLabel: booking.load.pickup,
-                    latitude: booking.load.pickupLatitude,
-                    longitude: booking.load.pickupLongitude,
-                  );
-                }
-              },
+              onPressed: () => openTripDirections(context, booking),
             ),
           ],
           if (!isDriver && booking != null) ...[

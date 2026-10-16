@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:661433704743:android:5e86649712315cbe990902",
+        "mobilesdk_app_id": "1:661433704743:android:1093f69427231ee9990902",
         "android_client_info": {
-          "package_name": "com.lorrylink.app"
+          "package_name": "com.newlorrylink.app"
         }
       },
       "oauth_client": [],
