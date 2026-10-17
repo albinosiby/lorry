@@ -57,6 +57,8 @@ import '../modules/customer_trucks/cubit/customer_trucks_cubit.dart';
 import '../modules/tracking/repositories/trip_tracking_repository.dart';
 import '../modules/tracking/repositories/trip_tracking_repository_interface.dart';
 import '../modules/tracking/cubit/trip_tracking_cubit.dart';
+import '../modules/account/cubit/support_cubit.dart';
+import '../modules/account/services/formspree_support_service.dart';
 
 final di = GetIt.instance;
 void configureDependencies(SupabaseClient client) {
@@ -101,6 +103,9 @@ void configureDependencies(SupabaseClient client) {
   di.registerLazySingleton<ITripTrackingRepository>(
     () => TripTrackingRepository(di()),
   );
+  di.registerLazySingleton<FormspreeSupportService>(
+    () => FormspreeSupportService(),
+  );
   configureCubits();
   di.registerLazySingleton(
     () => TripLocationSharingService(di(), di(), di(), di()),
@@ -108,6 +113,11 @@ void configureDependencies(SupabaseClient client) {
 }
 
 void configureCubits() {
+  if (!di.isRegistered<FormspreeSupportService>()) {
+    di.registerLazySingleton<FormspreeSupportService>(
+      () => FormspreeSupportService(),
+    );
+  }
   di.registerFactory(() => LanguageCubit(di()));
   di.registerFactory(() => SessionCubit(di()));
   di.registerFactory(() => AuthFormCubit(di()));
@@ -147,4 +157,5 @@ void configureCubits() {
   di.registerFactory(() => ProfileDocumentsCubit(di()));
   di.registerFactory(() => CustomerTrucksCubit(di(), di(), di()));
   di.registerFactory(() => TripTrackingCubit(di(), di()));
+  di.registerFactory(() => SupportCubit(di()));
 }

@@ -47,6 +47,7 @@ import '../../modules/customer_trucks/screens/customer_trucks_screen.dart';
 import '../../modules/tracking/cubit/trip_tracking_cubit.dart';
 import '../../modules/tracking/screens/trip_tracking_screen.dart';
 import '../../modules/account/screens/account_resources_screen.dart';
+import '../../modules/account/cubit/support_cubit.dart';
 import '../../modules/settings/screens/settings_screen.dart';
 import 'routes.dart';
 
@@ -391,8 +392,10 @@ GoRouter createRouter(SessionCubit session, RouterRefresh refresh) => GoRouter(
     ),
     GoRoute(
       path: Routes.support,
-      builder: (_, _) =>
-          const AccountResourcesScreen(resource: AccountResource.support),
+      builder: (_, _) => BlocProvider(
+        create: (_) => di<SupportCubit>(),
+        child: const AccountResourcesScreen(resource: AccountResource.support),
+      ),
     ),
     GoRoute(
       path: '${Routes.tracking}/:bookingId',

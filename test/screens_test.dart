@@ -423,6 +423,10 @@ void main() {
   ) async {
     final auth = FakeAuth(current: driver);
     await start(tester, auth);
+    expect(
+      find.widgetWithText(FilledButton, 'Post truck availability'),
+      findsOneWidget,
+    );
     await tester.tap(find.widgetWithText(OutlinedButton, 'Post Load'));
     await tester.pumpAndSettle();
     expect(find.byType(LoadFormScreen), findsOneWidget);

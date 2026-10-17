@@ -1,5 +1,4 @@
 import 'package:lorry_link/l10n/app_localizations.dart';
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lorry_link/core/state/resource_cubit.dart';
@@ -20,35 +19,31 @@ class NearbyServicesScreen extends StatefulWidget {
 class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
   final search = TextEditingController();
   NearbyServiceType? type;
-  Timer? debounce;
 
   @override
   void initState() {
     super.initState();
     final cubit = context.read<NearbyServicesCubit>();
     if (cubit.state.data == null) {
-      discover();
+      cubit.loadNearby();
     }
   }
 
   @override
   void dispose() {
-    debounce?.cancel();
     search.dispose();
     super.dispose();
   }
 
-  Future<void> discover() => context
-      .read<NearbyServicesCubit>()
-      .discoverSections(type: type, query: search.text.trim());
+  Future<void> refreshNearMe() =>
+      context.read<NearbyServicesCubit>().refreshNearMe();
 
   void selectCategory(NearbyServiceType? value) {
-    debounce?.cancel();
     setState(() {
       type = value;
       search.clear();
     });
-    discover();
+    context.read<NearbyServicesCubit>().updateFilters(type: value, query: '');
   }
 
   Future<void> _open(Uri uri) async {
@@ -92,18 +87,8 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            tooltip: localize(context, 'Refresh nearby essentials'),
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: discover,
-          ),
-        ],
       ),
       body: PageBody(
-        onRefresh: () async {
-          if (!context.read<NearbyServicesCubit>().state.busy) await discover();
-        },
         child:
             BlocBuilder<
               NearbyServicesCubit,
@@ -142,12 +127,11 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
                       alignment: Alignment.centerLeft,
                       child: FilledButton.tonalIcon(
                         onPressed: () {
-                          debounce?.cancel();
                           setState(() {
                             type = null;
                             search.clear();
                           });
-                          discover();
+                          refreshNearMe();
                         },
                         icon: const Icon(Icons.my_location),
                         label: const LocalizedText('Near me'),
@@ -159,7 +143,7 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
                     ),
                     const SizedBox(height: 12),
                     if (state.error != null)
-                      ErrorPanel(state.error!, retry: discover)
+                      ErrorPanel(state.error!)
                     else if (model != null && !available)
                       _buildGpsOfflineNotice(context, location?.status)
                     else if (model != null)
@@ -267,30 +251,20 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          IconButton.filledTonal(
-            tooltip: localize(context, available ? 'Refresh position' : 'Enable GPS'),
-            style: IconButton.styleFrom(
-              backgroundColor: primaryColor.withValues(alpha: .15),
-              foregroundColor: primaryColor,
+          if (!available) ...[
+            const SizedBox(width: 8),
+            IconButton.filledTonal(
+              tooltip: localize(context, 'Enable GPS'),
+              style: IconButton.styleFrom(
+                backgroundColor: primaryColor.withValues(alpha: .15),
+                foregroundColor: primaryColor,
+              ),
+              icon: const Icon(Icons.settings_outlined, size: 20),
+              onPressed: busy
+                  ? null
+                  : () => context.read<NearbyServicesCubit>().openSettings(),
             ),
-            icon: Icon(
-              available ? Icons.refresh_rounded : Icons.settings_outlined,
-              size: 20,
-            ),
-            onPressed: busy
-                ? null
-                : () {
-                    if (location?.status ==
-                            DeviceLocationStatus.serviceDisabled ||
-                        location?.status ==
-                            DeviceLocationStatus.permissionDeniedForever) {
-                      context.read<NearbyServicesCubit>().openSettings();
-                    } else {
-                      discover();
-                    }
-                  },
-          ),
+          ],
         ],
       ),
     );
@@ -492,36 +466,39 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
     return TextField(
       controller: search,
       textInputAction: TextInputAction.search,
-      onChanged: (_) {
+      onChanged: (value) {
         setState(() {});
-        debounce?.cancel();
-        debounce = Timer(const Duration(milliseconds: 700), discover);
+        context.read<NearbyServicesCubit>().updateFilters(
+          type: type,
+          query: value.trim(),
+        );
       },
-      onSubmitted: (_) {
-        debounce?.cancel();
-        discover();
-      },
-      decoration: localizedDecoration(context, InputDecoration(
-        hintText: 'Search petrol pump, mechanic, puncture, dhaba…',
-        prefixIcon: const Icon(Icons.search_rounded),
-        suffixIcon: search.text.isEmpty
-            ? null
-            : IconButton(
-                tooltip: localize(context, 'Clear search'),
-                icon: const Icon(Icons.close_rounded),
-                onPressed: () {
-                  debounce?.cancel();
-                  search.clear();
-                  setState(() {});
-                  discover();
-                },
-              ),
-        filled: true,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
+      decoration: localizedDecoration(
+        context,
+        InputDecoration(
+          hintText: 'Search petrol pump, mechanic, puncture, dhaba…',
+          prefixIcon: const Icon(Icons.search_rounded),
+          suffixIcon: search.text.isEmpty
+              ? null
+              : IconButton(
+                  tooltip: localize(context, 'Clear search'),
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: () {
+                    search.clear();
+                    setState(() {});
+                    context.read<NearbyServicesCubit>().updateFilters(
+                      type: type,
+                      query: '',
+                    );
+                  },
+                ),
+          filled: true,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
         ),
-      )),
+      ),
     );
   }
 
@@ -530,11 +507,13 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
     NearbyServicesScreenModel model,
     NearbyServiceType category,
   ) {
-    final items = model.services
-        .where((item) => item.type == category)
-        .toList();
-    final loading = model.loadingCategories.contains(category);
-    final error = model.categoryErrors[category];
+    final query = model.query.toLowerCase();
+    final items = model.services.where((item) {
+      if (item.type != category || query.isEmpty) return item.type == category;
+      return '${item.name} ${item.address} ${item.type.label}'
+          .toLowerCase()
+          .contains(query);
+    }).toList();
     final scale = MediaQuery.textScalerOf(context).scale(1);
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
@@ -553,12 +532,6 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
                   ),
                 ),
               ),
-              if (loading)
-                const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
             ],
           ),
           const SizedBox(height: 10),
@@ -580,29 +553,11 @@ class _NearbyServicesScreenState extends State<NearbyServicesScreen> {
                 ),
               ),
             ),
-          if (error != null)
-            Row(
-              children: [
-                const Icon(Icons.cloud_off_outlined, size: 18),
-                const SizedBox(width: 8),
-                const Expanded(child: LocalizedText('Could not load this category.')),
-                TextButton(
-                  onPressed: context.read<NearbyServicesCubit>().state.busy
-                      ? null
-                      : () => context.read<NearbyServicesCubit>().retryCategory(
-                          category,
-                        ),
-                  child: const LocalizedText('Retry'),
-                ),
-              ],
-            )
-          else if (items.isEmpty)
+          if (items.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 18),
               child: LocalizedText(
-                loading
-                    ? 'Finding nearby services…'
-                    : 'No services found within ${model.categoryRadii[category] ?? 50} km.',
+                'No services found within ${model.categoryRadii[category] ?? 50} km.',
               ),
             ),
         ],

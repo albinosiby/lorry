@@ -22,33 +22,16 @@ create policy driver_documents_read_own on storage.objects
     and (storage.foldername(name))[1] = (select auth.uid()::text)
   );
 
-do $$
+-- Insert the command before the stable tracking branch. This avoids coupling a
+-- production bootstrap to whitespace emitted by pg_get_functiondef().
+do $driver_documents_upgrade$
 declare
   function_definition text;
-  old_guard constant text := $sql$if action like 'vehicles.%' or action like 'availability.%' or action like 'finance.%' or action = 'documents.list' then
-    if profile.role <> 'driver' and not profile.driver_enabled then
-      raise exception 'Enable the driver profile to use this feature.';
-    end if;
-  end if;$sql$;
-  new_guard constant text := $sql$if action like 'vehicles.%' or action like 'availability.%' or action like 'finance.%' or action like 'documents.%' then
-    if profile.role <> 'driver' and not profile.driver_enabled then
-      raise exception 'Enable the driver profile to use this feature.';
-    end if;
-  end if;$sql$;
-  old_documents constant text := $sql$  if action = 'documents.list' then
-    select coalesce(jsonb_agg(to_jsonb(d) order by d.created_at desc), '[]'::jsonb)
-      into result from public.driver_documents d where d.driver_id = uid;
-    return result;
-  end if;
-
-  if action = 'tracking.get' then$sql$;
-  new_documents constant text := $sql$  if action = 'documents.list' then
-    select coalesce(jsonb_agg(to_jsonb(d) order by d.created_at desc), '[]'::jsonb)
-      into result from public.driver_documents d where d.driver_id = uid;
-    return result;
-  end if;
-
+  document_command constant text := $document_command$
   if action = 'documents.register' then
+    if profile.role <> 'driver' and not profile.driver_enabled then
+      raise exception 'Enable the driver profile to use this feature.';
+    end if;
     if coalesce(payload->>'document_type', '') not in (
       'identity', 'driving_license', 'vehicle_registration', 'insurance', 'permit', 'fitness_certificate'
     ) then
@@ -74,9 +57,8 @@ declare
       raise exception 'Choose the truck this document belongs to.';
     end if;
     with inserted as (
-      insert into public.driver_documents(
-        driver_id, vehicle_id, document_type, storage_path, expires_on
-      ) values (
+      insert into public.driver_documents(driver_id, vehicle_id, document_type, storage_path, expires_on)
+      values (
         uid, nullif(payload->>'vehicle_id', '')::uuid, payload->>'document_type',
         payload->>'storage_path', nullif(payload->>'expires_on', '')::date
       ) returning *
@@ -88,20 +70,20 @@ declare
     end if;
     return result;
   end if;
-
-  if action = 'tracking.get' then$sql$;
+$document_command$;
 begin
-  select pg_get_functiondef('private.lorry_next_api(text,jsonb)'::regprocedure)
+  select replace(pg_get_functiondef('private.lorry_next_api(text,jsonb)'::regprocedure), chr(13), '')
     into function_definition;
-  -- The deployed function was created on Windows and contains CRLF line ends.
-  -- Normalize it before matching the deliberately formatted command blocks.
-  function_definition := replace(function_definition, chr(13), '');
-  if position(old_guard in function_definition) = 0
-      or position(old_documents in function_definition) = 0 then
-    raise exception 'Could not upgrade lorry_next_api driver document commands.';
+  if position('if action = ''tracking.get'' then' in function_definition) = 0 then
+    raise exception 'Could not find the lorry_next_api tracking command boundary.';
   end if;
-  function_definition := replace(function_definition, old_guard, new_guard);
-  function_definition := replace(function_definition, old_documents, new_documents);
-  execute function_definition;
+  if position('if action = ''documents.register'' then' in function_definition) = 0 then
+    function_definition := replace(
+      function_definition,
+      'if action = ''tracking.get'' then',
+      document_command || E'\n  if action = ''tracking.get'' then'
+    );
+    execute function_definition;
+  end if;
 end;
-$$;
+$driver_documents_upgrade$;

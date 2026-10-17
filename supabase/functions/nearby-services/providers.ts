@@ -11,7 +11,7 @@ export function distanceKm(a: number,b: number,c: number,d: number) {
 const googleTypes: Partial<Record<Category,string>>={fuel:'gas_station',truck_stop:'truck_stop',workshop:'car_repair',tyre:'tire_shop',hospital:'hospital',food:'restaurant',hotel:'lodging',service_center:'car_repair'};
 const selectors: Record<Category,string[]>={
   fuel:['[amenity=fuel]'],
-  truck_stop:['[highway=rest_area]','[highway=services]','[amenity=parking][hgv~"^(yes|designated)$"]'],
+  truck_stop:['[highway=rest_area]','[highway=services]','[amenity=parking][hgv=yes]','[amenity=parking][hgv=designated]'],
   weighbridge:['[amenity=weighbridge]'],workshop:['[shop=car_repair]'],
   tyre:['[shop=tyres]'],hospital:['[amenity=hospital]','[amenity=clinic]'],
   food:['[amenity=restaurant]','[amenity=fast_food]','[amenity=cafe]'],
@@ -40,16 +40,23 @@ export async function osmSearch(search: Search, fetcher: typeof fetch=fetch): Pr
   const selected=type ? [type] : [...categories];
   const filters=[...new Set(selected.flatMap(t=>selectors[t]))];
   const radius=search.radiusKm*1000;
-  const query=`[out:json][timeout:18];(${filters.map(s=>`nwr(around:${radius},${search.latitude},${search.longitude})${s};`).join('')});out center tags 300;`;
-  const endpoints=[Deno.env.get('OVERPASS_API_URL') || 'https://overpass-api.de/api/interpreter','https://overpass.private.coffee/api/interpreter'];
+  // nw = node + way only (skip relations r to prevent massive Overpass timeouts)
+  const query=`[out:json][timeout:12];(${filters.map(s=>`nw(around:${radius},${search.latitude},${search.longitude})${s};`).join('')});out center tags 300;`;
+  const endpoints=[
+    Deno.env.get('OVERPASS_API_URL'),
+    'https://overpass.openstreetmap.fr/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.private.coffee/api/interpreter',
+  ].filter(Boolean) as string[];
   let payload: { elements?: Record<string,unknown>[] } | undefined;
   for (const endpoint of endpoints) {
     try {
-      const response=await fetcher(endpoint,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded','User-Agent':'LorryLink/1.0 (+https://puupnlblrehwrhpaolxs.supabase.co)'},body:new URLSearchParams({data:query}),signal:AbortSignal.timeout(22000)});
+      const response=await fetcher(endpoint,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded','User-Agent':'LorryLink/1.0 (+https://puupnlblrehwrhpaolxs.supabase.co)'},body:new URLSearchParams({data:query}),signal:AbortSignal.timeout(14000)});
       if (!response.ok) continue;
       payload=await response.json();
       if (payload?.elements) break;
-    } catch { /* Try the secondary endpoint once. */ }
+    } catch { /* Try the next endpoint. */ }
   }
   if (!payload?.elements) throw new Error('Nearby services could not be loaded. Please try again.');
   return payload.elements.flatMap(element=>{
@@ -79,7 +86,11 @@ export async function googleSearch(search:Search,key:string): Promise<Place[]> {
   const body=textSearch?{textQuery:[search.query,type==='weighbridge'?'weighbridge':type==='service_center'?'vehicle service center':type?googleTypes[type]:''].filter(Boolean).join(' '),locationBias:{circle},pageSize:20}:
     {includedTypes:type?[googleTypes[type]]:[...new Set(Object.values(googleTypes))],locationRestriction:{circle},maxResultCount:20,rankPreference:'DISTANCE'};
   const response=await fetch(`https://places.googleapis.com/v1/places:${textSearch?'searchText':'searchNearby'}`,{method:'POST',headers:{'Content-Type':'application/json','X-Goog-Api-Key':key,'X-Goog-FieldMask':'places.id,places.displayName,places.formattedAddress,places.location,places.types,places.rating,places.currentOpeningHours.openNow,places.internationalPhoneNumber,places.attributions'},body:JSON.stringify(body),signal:AbortSignal.timeout(12000)});
-  if(!response.ok)throw new Error('Google Places unavailable');
+  if(!response.ok) {
+    const errorText = await response.text().catch(() => '');
+    console.error(`Google Places error [${response.status}]: ${errorText}`);
+    throw new Error(`Google Places unavailable (${response.status})`);
+  }
   const result=await response.json();
   return (result.places??[]).flatMap((p:Record<string,unknown>)=>{
     const point=p.location as {latitude:number;longitude:number};

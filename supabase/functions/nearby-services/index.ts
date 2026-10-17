@@ -25,7 +25,7 @@ Deno.serve(async request=>{
       try{
         const services=await googleSearch(search,key);
         if(services.length)return json({services,provider:'google'});
-      }catch {console.warn('Google Places failed; using OpenStreetMap.');}
+      }catch(err) {console.warn('Google Places failed; using OpenStreetMap:', err);}
     }
     const cacheKey=JSON.stringify(search);
     const cached=cache.get(cacheKey);

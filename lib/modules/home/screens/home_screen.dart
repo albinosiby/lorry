@@ -114,6 +114,11 @@ class HomeScreen extends StatelessWidget {
                         icon: const Icon(Icons.inventory_2_outlined),
                         label: const LocalizedText('My Posted Loads'),
                       ),
+                      FilledButton.icon(
+                        onPressed: () => context.push(Routes.availability),
+                        icon: const Icon(Icons.add_location_alt_outlined),
+                        label: const LocalizedText('Post truck availability'),
+                      ),
                     ],
                   ),
                 ],

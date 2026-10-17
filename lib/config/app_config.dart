@@ -6,6 +6,10 @@ abstract final class AppConfig {
   static const url = String.fromEnvironment('SUPABASE_URL');
   static const key = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY');
 
+  /// Public Formspree form ID. The recipient email is configured in Formspree,
+  /// not embedded in the Android app.
+  static const formspreeFormId = String.fromEnvironment('FORMSPREE_FORM_ID');
+
   /// OSM-compatible tile template. A hosted provider can be supplied for
   /// production builds with `--dart-define=OSM_TILE_URL=...`.
   static const mapTileUrl = String.fromEnvironment(
