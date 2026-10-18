@@ -35,13 +35,13 @@ function matchesName(place: Place, query: string) {
   return `${place.name} ${place.address}`.toLowerCase().includes(query.toLowerCase());
 }
 
-export async function osmSearch(search: Search, fetcher: typeof fetch=fetch): Promise<Place[]> {
+export async function osmSearch(search: Search, fetcher: typeof fetch=fetch, maxResults=300): Promise<Place[]> {
   const type=search.type ?? inferCategory(search.query);
   const selected=type ? [type] : [...categories];
   const filters=[...new Set(selected.flatMap(t=>selectors[t]))];
   const radius=search.radiusKm*1000;
   // nw = node + way only (skip relations r to prevent massive Overpass timeouts)
-  const query=`[out:json][timeout:12];(${filters.map(s=>`nw(around:${radius},${search.latitude},${search.longitude})${s};`).join('')});out center tags 300;`;
+  const query=`[out:json][timeout:20];(${filters.map(s=>`nw(around:${radius},${search.latitude},${search.longitude})${s};`).join('')});out center tags ${maxResults};`;
   const endpoints=[
     Deno.env.get('OVERPASS_API_URL'),
     'https://overpass.openstreetmap.fr/api/interpreter',
@@ -76,7 +76,7 @@ export async function osmSearch(search: Search, fetcher: typeof fetch=fetch): Pr
     const place:Place={id:`osm:${element.type}:${element.id}`,service_type:found,name:tags.name||tags['name:en']||tags.brand||tags.operator||found.replaceAll('_',' '),address:['addr:housenumber','addr:street','addr:suburb','addr:city'].map(k=>tags[k]).filter(Boolean).join(', '),latitude:center.lat,longitude:center.lon,distance_km:distanceKm(search.latitude,search.longitude,center.lat,center.lon),phone:tags['contact:phone']||tags.phone||'',provider:'osm',opening_hours:tags.opening_hours,truck_friendly:['yes','designated'].includes(tags.hgv)};
     if(tags.opening_hours==='24/7')place.is_open_now=true;
     return place.distance_km<=search.radiusKm&&matchesName(place,search.query)?[place]:[];
-  }).sort((a,b)=>a.distance_km-b.distance_km).slice(0,60);
+  }).sort((a,b)=>a.distance_km-b.distance_km).slice(0,maxResults);
 }
 
 export async function googleSearch(search:Search,key:string): Promise<Place[]> {
@@ -101,4 +101,19 @@ export async function googleSearch(search:Search,key:string): Promise<Place[]> {
     const place:Place={id:String(p.id),service_type:category,name:(p.displayName as {text:string})?.text??'Nearby service',address:String(p.formattedAddress??''),latitude:point.latitude,longitude:point.longitude,distance_km:distanceKm(search.latitude,search.longitude,point.latitude,point.longitude),provider:'google',phone:String(p.internationalPhoneNumber??''),rating:p.rating as number|undefined,is_open_now:(p.currentOpeningHours as {openNow?:boolean})?.openNow,attributions:p.attributions as Place['attributions']};
     return place.distance_km<=search.radiusKm?[place]:[];
   }).sort((a:Place,b:Place)=>a.distance_km-b.distance_km);
+}
+
+/// Google limits one Nearby Search response to 20 places. An explicit expanded
+/// search queries the supported service categories separately, so a nearby
+/// workshop is not hidden behind a busy area's fuel/food results.
+export async function googleSearchExpanded(search: Search, key: string): Promise<Place[]> {
+  const results = await Promise.all(
+    categories.map((type) => googleSearch({...search, type, query: ''}, key)),
+  );
+  const unique = new Map<string, Place>();
+  for (const place of results.flat()) {
+    const existing = unique.get(place.id);
+    if (!existing || place.distance_km < existing.distance_km) unique.set(place.id, place);
+  }
+  return [...unique.values()].sort((a, b) => a.distance_km - b.distance_km);
 }

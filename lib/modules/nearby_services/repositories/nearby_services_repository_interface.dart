@@ -7,5 +7,6 @@ abstract interface class INearbyServicesRepository {
     required int radiusKm,
     NearbyServiceType? type,
     String? query,
+    bool expand = false,
   });
 }

@@ -13,7 +13,12 @@ import 'support/fakes.dart';
 
 class CountingRepository implements INearbyServicesRepository {
   int calls = 0;
-  final requests = <({int radiusKm, NearbyServiceType? type, String? query})>[];
+  final requests = <({
+    int radiusKm,
+    NearbyServiceType? type,
+    String? query,
+    bool expand,
+  })>[];
 
   @override
   Future<List<NearbyServiceModel>> search({
@@ -22,9 +27,15 @@ class CountingRepository implements INearbyServicesRepository {
     required int radiusKm,
     NearbyServiceType? type,
     String? query,
+    bool expand = false,
   }) async {
     calls++;
-    requests.add((radiusKm: radiusKm, type: type, query: query));
+    requests.add((
+      radiusKm: radiusKm,
+      type: type,
+      query: query,
+      expand: expand,
+    ));
     return const [
       NearbyServiceModel(
         id: 'fuel-1',
@@ -64,6 +75,7 @@ class PendingRepository implements INearbyServicesRepository {
     required int radiusKm,
     NearbyServiceType? type,
     String? query,
+    bool expand = false,
   }) {
     final request = Completer<List<NearbyServiceModel>>();
     requests.add(request);
@@ -88,6 +100,7 @@ void main() {
     expect(repository.requests.single.radiusKm, 50);
     expect(repository.requests.single.type, isNull);
     expect(repository.requests.single.query, isNull);
+    expect(repository.requests.single.expand, isFalse);
     expect(cubit.state.data!.services, hasLength(2));
     await cubit.close();
   });
@@ -119,6 +132,7 @@ void main() {
     expect(repository.calls, 2);
     expect(repository.requests.last.type, isNull);
     expect(repository.requests.last.query, isNull);
+    expect(repository.requests.last.expand, isTrue);
     expect(cubit.state.data!.type, isNull);
     expect(cubit.state.data!.query, isEmpty);
     await cubit.close();

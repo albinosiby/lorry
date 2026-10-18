@@ -28,7 +28,11 @@ class NearbyServicesCubit extends ResourceCubit<NearbyServicesScreenModel> {
   /// [query] and [type] describe local UI filters only; they are intentionally
   /// not passed to the provider so filter taps and typing never create Google
   /// Places requests.
-  Future<void> loadNearby({String query = '', NearbyServiceType? type}) async {
+  Future<void> loadNearby({
+    String query = '',
+    NearbyServiceType? type,
+    bool expand = false,
+  }) async {
     final generation = ++_searchGeneration;
     final previous = state.data;
     emit(ResourceState(data: previous, busy: true, loading: previous == null));
@@ -68,6 +72,7 @@ class NearbyServicesCubit extends ResourceCubit<NearbyServicesScreenModel> {
               latitude: location.latitude!,
               longitude: location.longitude!,
               radiusKm: 50,
+              expand: expand,
             )
             .timeout(const Duration(seconds: 60)),
       );
@@ -124,7 +129,9 @@ class NearbyServicesCubit extends ResourceCubit<NearbyServicesScreenModel> {
   }
 
   /// Clear public entry point for the explicit Near me action.
-  Future<void> refreshNearMe() => loadNearby();
+  /// The explicit user action may use the broader provider search. It is kept
+  /// off the initial page load to control Google Places usage.
+  Future<void> refreshNearMe() => loadNearby(expand: true);
 
   Future<void> openSettings() =>
       state.data?.location.status ==
